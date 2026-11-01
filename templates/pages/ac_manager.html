@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirBnBrrr — Manage ACs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            colors: {
+              brand: { 50: '#f3fafb', 100: '#C1E6EC', 500: '#62B6DC', 600: '#1E6AA6', 700: '#185585', 800: '#4b6b80', 900: '#0b1d30' }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        dialog::backdrop { background: rgba(11, 29, 48, 0.5); }
+        #toast { transition: opacity .2s; }
+    </style>
+</head>
+
+<body class="bg-brand-50 min-h-screen font-sans antialiased text-slate-800">
+
+  <!-- INCLUDE navigation.html -->
+
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <main class="max-w-4xl mx-auto p-4 sm:p-8">
+
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-1">
+        <h1 class="text-2xl font-bold tracking-tight text-brand-900">Manage ACs</h1>
+        <div class="flex gap-2">
+          <a href="/pages/ml_learning" class="px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:border-brand-600 no-underline">How the models learn</a>
+          <button id="add" class="px-4 py-2 rounded-xl text-sm font-semibold bg-brand-600 text-white hover:bg-brand-700 border-0 cursor-pointer disabled:opacity-50">+ Add AC</button>
+        </div>
+      </div>
+      <p class="text-sm text-brand-800 mb-6">Each AC has its own machine-learning model. Add one here, send it data, then press Train now.</p>
+
+      <div id="list" class="space-y-3"><div class="text-center text-slate-400 py-10">Loading…</div></div>
+
+      <div class="mt-6 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-xs text-slate-500 leading-relaxed">
+        <b class="text-slate-700">About the names.</b> Use <b>Rename</b> to call an AC whatever you like. Without a name it is shown as
+        AC1, AC2, ... by its position in this list, so when you delete one the others move up. Each unit keeps a fixed <b>device code</b>
+        underneath, which is what your ESP32 sends, and it is shown in grey whenever it differs from the name. Deleting an AC permanently removes its readings and its model; live telemetry and past
+        alerts are not affected. Turn off or reconfigure the device first, or its next reading will bring the AC back.
+      </div>
+    </main>
+  </div>
+
+  <dialog id="dlg" class="rounded-2xl border border-slate-200 p-6 w-[92vw] max-w-md text-slate-800">
+    <h2 id="dlgTitle" class="text-lg font-bold mb-2">Delete AC</h2>
+    <p id="dlgBody" class="text-sm text-slate-600 mb-1"></p>
+    <p class="text-sm mb-3"><a id="dlgExport" href="#" class="text-brand-600 font-semibold">Download its data as CSV first</a></p>
+    <label id="dlgLabel" for="dlgInput" class="block text-xs text-slate-500 mb-1"></label>
+    <input id="dlgInput" autocomplete="off" spellcheck="false"
+           class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm mb-4 outline-none focus:border-brand-600">
+    <div class="flex justify-end gap-2">
+      <button id="dlgCancel" class="px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 cursor-pointer">Cancel</button>
+      <button id="dlgGo" disabled class="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 text-white border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">Delete forever</button>
+    </div>
+  </dialog>
+  <dialog id="renDlg" class="rounded-2xl border border-slate-200 p-6 w-[92vw] max-w-sm text-slate-800">
+    <h2 class="text-lg font-bold mb-1">Rename AC</h2>
+    <p class="text-xs text-slate-500 mb-3">Device code <b id="renCode"></b> (the Pi or ESP32 keeps sending this one). The name is only what you see on the dashboard and in alerts.</p>
+    <input id="renInput" maxlength="40" autocomplete="off" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-brand-600" placeholder="for example: Bedroom AC">
+    <p id="renErr" class="text-xs text-red-600 min-h-[1rem] mt-1"></p>
+    <div class="flex flex-wrap justify-between gap-2 mt-2">
+      <button id="renDefault" class="px-3 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 cursor-pointer">Use default name</button>
+      <div class="flex gap-2">
+        <button id="renCancel" class="px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 cursor-pointer">Cancel</button>
+        <button id="renSave" class="px-4 py-2 rounded-xl text-sm font-semibold bg-brand-600 text-white border-0 cursor-pointer">Save</button>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="limDlg" class="rounded-2xl border border-slate-200 p-6 w-[95vw] max-w-2xl text-slate-800">
+    <h2 id="limTitle" class="text-lg font-bold mb-1">Safety limits</h2>
+    <p class="text-xs text-slate-500 mb-3">These numbers decide what counts as a problem for this AC and what the alerts say. Change them when this AC is bigger or smaller than the default. A <b>&#9889; instant</b> limit sends an alert straight away when it is passed, even before the AI has learned anything.</p>
+    <div id="limRows" class="space-y-2 max-h-[52vh] overflow-y-auto pr-1"></div>
+    <p id="limErr" class="text-xs text-red-600 min-h-[1rem] mt-2"></p>
+    <div class="flex flex-wrap justify-between gap-2 mt-2">
+      <button id="limReset" class="px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 cursor-pointer">Reset to defaults</button>
+      <div class="flex gap-2">
+        <button id="limCancel" class="px-4 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 cursor-pointer">Cancel</button>
+        <button id="limSave" class="px-4 py-2 rounded-xl text-sm font-semibold bg-brand-600 text-white border-0 cursor-pointer">Save limits</button>
+      </div>
+    </div>
+  </dialog>
+  <div id="toast" role="status" class="fixed left-1/2 -translate-x-1/2 bottom-6 bg-brand-900 text-white text-sm px-4 py-2 rounded-xl opacity-0 pointer-events-none max-w-[90vw]"></div>
+
+  <script>
+    "use strict";
+    const $ = (id) => document.getElementById(id);
+    let units = [], pending = null;
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+    function toast(msg) { const t = $("toast"); t.textContent = msg; t.style.opacity = 1; clearTimeout(toast.h); toast.h = setTimeout(() => { t.style.opacity = 0; }, 3500); }
+
+    async function api(path, opts) {
+      const r = await fetch(path, Object.assign({ credentials: "same-origin" }, opts || {}));
+      if (r.status === 401) { location.href = "/pages/login"; throw new Error("login required"); }
+      if (!r.ok) { let d = ""; try { d = (await r.json()).detail; } catch (e) {} throw new Error(d || ("Error " + r.status)); }
+      return r;
+    }
+    async function load() {
+      try { units = await (await api("/api/acs")).json(); render(); }
+      catch (e) { $("list").innerHTML = '<div class="text-center text-slate-400 py-10">Could not load the AC list: ' + esc(e.message) + "</div>"; }
+    }
+    const BTN = "px-3.5 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:border-brand-600 cursor-pointer no-underline disabled:opacity-40 disabled:cursor-not-allowed";
+    function render() {
+      if (!units.length) { $("list").innerHTML = '<div class="text-center text-slate-400 py-10">No ACs yet. Press "+ Add AC".</div>'; return; }
+      $("list").innerHTML = units.map((u) => {
+        const moved = u.code !== u.label ? `<span class="ml-2 text-xs font-normal text-slate-400">device code ${esc(u.code)}</span>` : "";
+        const model = u.has_model
+          ? `<span class="inline-block text-xs px-2 py-0.5 rounded-full border border-emerald-500 text-emerald-600 mr-2">model ready</span>${u.model_rows.toLocaleString()} rows learned${u.trained_at ? " · " + new Date(u.trained_at).toLocaleString() : ""}`
+          : `<span class="inline-block text-xs px-2 py-0.5 rounded-full border border-slate-300 text-slate-500 mr-2">no model yet</span>${u.readings >= 200 ? "ready to train" : "needs 200+ readings"}`;
+        return `<div class="card bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-wrap items-center justify-between gap-3" data-code="${esc(u.code)}">
+          <div>
+            <div class="text-lg font-bold text-brand-900">${esc(u.label)}${moved}</div>
+            <div class="text-xs text-slate-500 mt-0.5">${u.readings.toLocaleString()} readings stored</div>
+            <div class="text-xs text-slate-500 mt-1">${model}</div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button class="${BTN}" data-act="rename">Rename</button>
+            <button class="${BTN}" data-act="limits">Safety limits</button>
+            <button class="${BTN}" data-act="train" ${u.readings < 200 ? "disabled" : ""}>Train now</button>
+            <a class="${BTN}" href="/api/acs/${encodeURIComponent(u.code)}/export.csv">Export CSV</a>
+            <button class="${BTN} !text-red-600 !border-red-300 hover:!border-red-600" data-act="del">Delete</button>
+          </div></div>`;
+      }).join("");
+    }
+
+    $("add").onclick = async () => {
+      $("add").disabled = true;
+      try { const u = await (await api("/api/acs", { method: "POST" })).json(); toast(u.label + " added"); await load(); }
+      catch (e) { toast(e.message); } finally { $("add").disabled = false; }
+    };
+    $("list").onclick = async (e) => {
+      const b = e.target.closest("button[data-act]"); if (!b) return;
+      const u = units.find((x) => x.code === b.closest(".card").dataset.code); if (!u) return;
+      if (b.dataset.act === "rename") { openRename(u); return; }
+      if (b.dataset.act === "limits") { openLimits(u); return; }
+      if (b.dataset.act === "train") {
+        try { await api("/api/acs/" + encodeURIComponent(u.code) + "/train", { method: "POST" });
+              toast("Training " + u.label + "… this takes a few seconds"); setTimeout(load, 6000); setTimeout(load, 15000); }
+        catch (err) { toast(err.message); }
+      } else { openDelete(u); }
+    };
+    // ---- rename ----
+    let renUnit = null;
+    function openRename(u) {
+      renUnit = u; $("renErr").textContent = "";
+      $("renCode").textContent = u.code; $("renInput").value = u.name || ""; $("renInput").placeholder = "default: " + u.default_label;
+      $("renDlg").showModal(); $("renInput").focus();
+    }
+    async function saveName(name) {
+      try {
+        await api("/api/acs/" + encodeURIComponent(renUnit.code) + "/name", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) });
+        $("renDlg").close(); toast("Name saved"); await load();
+      } catch (e) { $("renErr").textContent = e.message; }
+    }
+    $("renSave").onclick = () => saveName($("renInput").value);
+    $("renDefault").onclick = () => saveName("");
+    $("renCancel").onclick = () => $("renDlg").close();
+    $("renInput").onkeydown = (e) => { if (e.key === "Enter") saveName($("renInput").value); };
+
+    // ---- safety limits ----
+    let limUnit = null, limMeta = [];
+    async function openLimits(u) {
+      limUnit = u; $("limErr").textContent = "";
+      $("limTitle").textContent = "Safety limits for " + u.label;
+      try {
+        const d = await (await api("/api/acs/" + encodeURIComponent(u.code) + "/limits")).json();
+        limMeta = d.meta;
+        $("limRows").innerHTML = d.meta.map((m) => {
+          const v = d.limits[m.key];
+          const inst = m.instant === "max" ? '<span class="ml-1 text-[10px] font-bold text-amber-600">&#9889; instant on high</span>' : "";
+          const lowField = m.use === "max" ? '<div class="text-xs text-slate-300 pt-6">&nbsp;</div>' :
+            `<label class="text-[11px] text-slate-500 block">${esc(m.min_label || "Low")}<input data-k="${m.key}" data-s="min" type="number" step="${m.step}" value="${v.min}" class="mt-0.5 w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm"></label>`;
+          return `<div class="grid grid-cols-[1fr_auto_auto] gap-3 items-end rounded-xl border border-slate-200 p-3">
+            <div class="text-sm font-semibold text-slate-800">${esc(m.label)} <span class="font-normal text-slate-400">(${esc(m.unit)})</span>${inst}</div>
+            <div class="w-28">${lowField}</div>
+            <div class="w-28"><label class="text-[11px] text-slate-500 block">High<input data-k="${m.key}" data-s="max" type="number" step="${m.step}" value="${v.max}" class="mt-0.5 w-full rounded-lg border border-slate-300 bg-slate-50 px-2 py-1.5 text-sm"></label></div>
+          </div>`;
+        }).join("");
+        $("limDlg").showModal();
+      } catch (e) { toast(e.message); }
+    }
+    function collectLimits() {
+      const out = {};
+      limMeta.forEach((m) => { out[m.key] = { min: 0, max: 0 }; });
+      document.querySelectorAll("#limRows input").forEach((i) => { out[i.dataset.k][i.dataset.s] = i.value === "" ? NaN : Number(i.value); });
+      limMeta.filter((m) => m.use === "max").forEach((m) => { out[m.key].min = 0; });
+      return out;
+    }
+    $("limCancel").onclick = () => $("limDlg").close();
+    $("limSave").onclick = async () => {
+      try {
+        await api("/api/acs/" + encodeURIComponent(limUnit.code) + "/limits", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ limits: collectLimits() }) });
+        $("limDlg").close(); toast("Limits saved for " + limUnit.label);
+      } catch (e) { $("limErr").textContent = e.message; }
+    };
+    $("limReset").onclick = async () => {
+      try { await api("/api/acs/" + encodeURIComponent(limUnit.code) + "/limits/reset", { method: "POST" }); $("limDlg").close(); toast("Limits reset for " + limUnit.label); }
+      catch (e) { $("limErr").textContent = e.message; }
+    };
+
+    function openDelete(u) {
+      pending = u;
+      $("dlgTitle").textContent = "Delete " + u.label + "?";
+      $("dlgBody").textContent = "This permanently deletes " + u.readings.toLocaleString() + " stored readings and the model of " + u.label + ". It cannot be undone.";
+      $("dlgExport").href = "/api/acs/" + encodeURIComponent(u.code) + "/export.csv";
+      $("dlgLabel").textContent = "Type " + u.label + " to confirm";
+      $("dlgInput").value = ""; $("dlgGo").disabled = true; $("dlg").showModal(); $("dlgInput").focus();
+    }
+    $("dlgInput").oninput = () => { $("dlgGo").disabled = !pending || $("dlgInput").value.trim().toUpperCase() !== pending.label.toUpperCase(); };
+    $("dlgCancel").onclick = () => $("dlg").close();
+    $("dlgGo").onclick = async () => {
+      const u = pending; $("dlgGo").disabled = true;
+      try {
+        const d = await (await api("/api/acs/" + encodeURIComponent(u.code) + "?confirm=" + encodeURIComponent($("dlgInput").value.trim()), { method: "DELETE" })).json();
+        $("dlg").close(); toast(u.label + " deleted (" + d.readings_deleted.toLocaleString() + " readings removed)"); await load();
+      } catch (e) { toast(e.message); $("dlgGo").disabled = false; }
+    };
+    load();
+  </script>
+</body>
+
+</html>

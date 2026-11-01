@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirBnBrrr - Traccar Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f3fafb',
+                100: '#C1E6EC',
+                500: '#62B6DC',
+                600: '#1E6AA6',
+                700: '#185585',
+                800: '#4b6b80',
+                900: '#0b1d30',
+              }
+            }
+          }
+        }
+      }
+    </script>
+</head>
+
+<body class="bg-brand-50 min-h-screen font-sans antialiased text-slate-800">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <!-- Centered Flex Wrapper under Navbar -->
+    <div class="flex items-center justify-center p-4 sm:p-8 min-h-[calc(100vh-4rem)]">
+      <main class="w-full max-w-2xl bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+        <div class="bg-brand-600 px-6 py-5 text-white flex items-center gap-3">
+            <i data-lucide="key-round" class="w-6 h-6"></i>
+            <h1 class="text-2xl font-bold tracking-tight">Traccar Setup</h1>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <form id="traccarForm" class="space-y-6">
+                <div>
+                    <label for="sms_url" class="block text-sm font-semibold text-slate-700 mb-2">SMS URL</label>
+                    <input id="sms_url" name="sms_url" type="url" placeholder="https://www.traccar.org/sms"
+                        class="block w-full rounded-xl border-slate-300 bg-slate-50 py-3 px-4 text-slate-900 border focus:border-brand-600 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none transition-colors duration-200" />
+                </div>
+
+                <div>
+                    <label for="api_key" class="block text-sm font-semibold text-slate-700 mb-2">API Key</label>
+                    <input id="api_key" name="api_key" type="text" placeholder="Paste your Traccar API key"
+                        class="block w-full rounded-xl border-slate-300 bg-slate-50 py-3 px-4 text-slate-900 border focus:border-brand-600 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none transition-colors duration-200" />
+                </div>
+
+                <div class="pt-4 flex flex-col sm:flex-row gap-3 items-center">
+                    <button
+                        class="w-full sm:w-auto flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 px-5 rounded-xl transition-colors duration-200 shadow-sm flex items-center justify-center gap-2 cursor-pointer border-0"
+                        type="submit">
+                        Save Settings
+                    </button>
+                    <button
+                        class="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-5 rounded-xl border border-slate-300 transition-colors duration-200 shadow-sm cursor-pointer"
+                        type="button" id="refresh">
+                        Refresh
+                    </button>
+                </div>
+
+                <div class="text-center text-sm font-medium min-h-[1.25rem] transition-all" id="status"></div>
+            </form>
+
+            <hr class="border-slate-200 my-8">
+
+            <div class="bg-brand-50 border border-brand-100 rounded-2xl p-5 text-sm text-brand-900">
+                <p class="font-semibold mb-2">How this works</p>
+                <ul class="list-disc pl-5 space-y-1 text-brand-800">
+                    <li>Values saved here are stored in your local database.</li>
+                    <li>The SMS sender service reads this configuration every time it sends a message.</li>
+                    <li>Leave API Key empty if your Traccar endpoint does not require authorization.</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+  </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const traccarForm = document.getElementById('traccarForm');
+
+        async function load() {
+            statusEl.textContent = '';
+            try {
+                const res = await fetch('/traccar_setup');
+                if (!res.ok) throw new Error('Failed to load settings');
+                const j = await res.json();
+
+                document.getElementById('sms_url').value = j.sms_url || '';
+                document.getElementById('api_key').value = j.api_key || '';
+            } catch (err) {
+                statusEl.style.color = '#ef4444';
+                statusEl.textContent = 'Error loading settings';
+            }
+        }
+
+        traccarForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusEl.style.color = '#334155';
+            statusEl.textContent = 'Saving...';
+
+            const payload = {
+                sms_url: document.getElementById('sms_url').value,
+                api_key: document.getElementById('api_key').value
+            };
+
+            try {
+                const res = await fetch('/traccar_setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Save failed');
+
+                statusEl.style.color = '#10b981';
+                statusEl.textContent = 'Settings successfully saved!';
+
+                setTimeout(() => {
+                    if (statusEl.textContent === 'Settings successfully saved!') {
+                        statusEl.textContent = '';
+                    }
+                }, 3000);
+            } catch (err) {
+                statusEl.style.color = '#ef4444';
+                statusEl.textContent = 'Error saving settings';
+            }
+        });
+
+        document.getElementById('refresh').addEventListener('click', load);
+        window.addEventListener('load', load);
+    </script>
+    </div>
+  </div>
+</body>
+
+</html>

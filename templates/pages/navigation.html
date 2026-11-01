@@ -1,0 +1,282 @@
+<!-- Google Fonts - Inter for unified premium typography -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+  /* Global font family override to Inter for absolute consistency across all pages */
+  html, body, button, input, select, textarea {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+  }
+</style>
+
+<!-- Unified Sidebar Navigation -->
+<aside class="fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col">
+  <!-- Brand Header -->
+  <div class="h-16 flex items-center gap-3 px-6 border-b border-slate-100 flex-shrink-0">
+    <div class="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex items-center justify-center bg-white border border-slate-200">
+      <img src="/assets/xd/logo.png" alt="AirBnBrrr Logo" class="w-full h-full object-cover" />
+    </div>
+    <span class="text-xl font-bold tracking-tight text-slate-900">AirBnBrrr</span>
+  </div>
+
+  <!-- Navigation List -->
+  <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Main</div>
+    <a href="/" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="control_panel">
+      <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+      <span>Control Panel</span>
+    </a>
+    <a href="/pages/dashboard" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="dashboard">
+      <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+      <span>Dashboard</span>
+    </a>
+    
+    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 pt-4 mb-2">Data & Analytics</div>
+    <a href="/pages/real_time_graphs" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="real_time_graphs">
+      <i data-lucide="activity" class="w-5 h-5"></i>
+      <span>Live Graphs</span>
+    </a>
+    <a href="/pages/data_detailed_graph" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="data_detailed_graph">
+      <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+      <span>Data Analysis</span>
+    </a>
+    <a href="/pages/data_gathered" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="data_gathered">
+      <i data-lucide="database" class="w-5 h-5"></i>
+      <span>Data Gathered</span>
+    </a>
+    <a href="/pages/isolation_forest" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="isolation_forest">
+      <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+      <span>Isolation Forest</span>
+    </a>
+    <a href="/pages/ml_learning" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ml_learning">
+      <i data-lucide="trending-up" class="w-5 h-5"></i>
+      <span>Model Health</span>
+    </a>
+    <!--
+    <a href="/pages/historical_data" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="historical_data">
+      <i data-lucide="history" class="w-5 h-5"></i>
+      <span>Historical Data</span>
+    </a>
+    -->
+
+    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 pt-4 mb-2">Configuration</div>
+    <a href="/pages/ac_manager" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ac_manager">
+      <i data-lucide="layers" class="w-5 h-5"></i>
+      <span>Manage ACs</span>
+    </a>
+    <a href="/pages/ac_setup" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ac_setup">
+      <i data-lucide="thermometer-snowflake" class="w-5 h-5"></i>
+      <span>AC Setup</span>
+    </a>
+    <a href="/pages/contacts" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="contacts">
+      <i data-lucide="users" class="w-5 h-5"></i>
+      <span>Contacts</span>
+    </a>
+    <a href="/pages/alerts" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="alerts">
+      <i data-lucide="bell-ring" class="w-5 h-5"></i>
+      <span>Alerts</span>
+    </a>
+    <a href="/pages/traccar_setup" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="traccar_setup">
+      <i data-lucide="key-round" class="w-5 h-5"></i>
+      <span>Traccar Setup</span>
+    </a>
+    <a href="/pages/ai_setup" class="nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ai_setup">
+      <i data-lucide="sparkles" class="w-5 h-5"></i>
+      <span>AI Setup</span>
+    </a>
+  </nav>
+
+  <!-- Footer Profile / Sign Out -->
+  <div class="p-4 border-t border-slate-100 flex-shrink-0 bg-slate-50/55">
+    <div class="flex items-center justify-between mb-3 px-1">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">
+          A
+        </div>
+        <div>
+          <div class="text-sm font-bold text-slate-800">Admin</div>
+          <div class="text-xs font-semibold text-slate-500">Connected</div>
+        </div>
+      </div>
+    </div>
+    <a href="/api/logout" class="flex items-center justify-center gap-2 w-full text-center px-4 py-2.5 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl transition-all duration-200 no-underline">
+      <i data-lucide="log-out" class="w-4 h-4"></i>
+      <span>Sign Out</span>
+    </a>
+  </div>
+</aside>
+
+<!-- Mobile Top Header -->
+<header class="fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-30 flex lg:hidden items-center justify-between px-4 flex-shrink-0">
+  <div class="flex items-center gap-2.5">
+    <button id="mobile-sidebar-toggle" class="p-2 -ml-2 text-slate-700 hover:bg-slate-100 rounded-xl transition-all bg-transparent border-0 cursor-pointer flex items-center justify-center">
+      <i data-lucide="menu" class="w-6 h-6" id="mobile-menu-icon"></i>
+    </button>
+    <div class="w-7 h-7 rounded-lg overflow-hidden shadow-sm flex items-center justify-center bg-white border border-slate-200">
+      <img src="/assets/xd/logo.png" alt="AirBnBrrr Logo" class="w-full h-full object-cover" />
+    </div>
+    <span class="text-lg font-bold tracking-tight text-slate-900">AirBnBrrr</span>
+  </div>
+  
+  <div class="flex items-center gap-1.5">
+    <a href="/api/logout" class="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-all flex items-center justify-center">
+      <i data-lucide="log-out" class="w-5 h-5"></i>
+    </a>
+  </div>
+</header>
+
+<!-- Mobile Slide-out Drawer Overlay -->
+<div id="mobile-sidebar-backdrop" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden transition-opacity duration-300 opacity-0">
+  <aside id="mobile-sidebar-drawer" class="fixed inset-y-0 left-0 w-64 bg-white shadow-xl flex flex-col transform -translate-x-full transition-transform duration-300">
+    <!-- Mobile Drawer Header -->
+    <div class="h-16 flex items-center justify-between px-5 border-b border-slate-100 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg overflow-hidden shadow-sm flex items-center justify-center bg-white border border-slate-200">
+          <img src="/assets/xd/logo.png" alt="AirBnBrrr Logo" class="w-full h-full object-cover" />
+        </div>
+        <span class="text-lg font-bold tracking-tight text-slate-900">AirBnBrrr</span>
+      </div>
+      <button id="mobile-sidebar-close" class="p-1.5 text-slate-400 hover:bg-slate-100 rounded-lg bg-transparent border-0 cursor-pointer flex items-center justify-center">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- Navigation List -->
+    <nav class="flex-1 px-4 py-5 space-y-1.5 overflow-y-auto">
+      <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 mb-2">Main</div>
+      <a href="/" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="control_panel">
+        <i data-lucide="sliders-horizontal" class="w-5 h-5"></i>
+        <span>Control Panel</span>
+      </a>
+      <a href="/pages/dashboard" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="dashboard">
+        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+        <span>Dashboard</span>
+      </a>
+      
+      <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 pt-4 mb-2">Data & Analytics</div>
+      <a href="/pages/real_time_graphs" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="real_time_graphs">
+        <i data-lucide="activity" class="w-5 h-5"></i>
+        <span>Live Graphs</span>
+      </a>
+      <a href="/pages/data_detailed_graph" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="data_detailed_graph">
+        <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+        <span>Data Analysis</span>
+      </a>
+      <a href="/pages/data_gathered" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="data_gathered">
+        <i data-lucide="database" class="w-5 h-5"></i>
+        <span>Data Gathered</span>
+      </a>
+      <a href="/pages/isolation_forest" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="isolation_forest">
+        <i data-lucide="brain-circuit" class="w-5 h-5"></i>
+        <span>Isolation Forest</span>
+      </a>
+      <a href="/pages/ml_learning" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ml_learning">
+        <i data-lucide="trending-up" class="w-5 h-5"></i>
+        <span>Model Health</span>
+      </a>
+      <!--
+      <a href="/pages/historical_data" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="historical_data">
+        <i data-lucide="history" class="w-5 h-5"></i>
+        <span>Historical Data</span>
+      </a>
+      -->
+
+      <div class="text-xs font-bold text-slate-400 uppercase tracking-wider px-3 pt-4 mb-2">Configuration</div>
+      <a href="/pages/ac_manager" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ac_manager">
+        <i data-lucide="layers" class="w-5 h-5"></i>
+        <span>Manage ACs</span>
+      </a>
+      <a href="/pages/ac_setup" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ac_setup">
+        <i data-lucide="thermometer-snowflake" class="w-5 h-5"></i>
+        <span>AC Setup</span>
+      </a>
+      <a href="/pages/contacts" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="contacts">
+        <i data-lucide="users" class="w-5 h-5"></i>
+        <span>Contacts</span>
+      </a>
+      <a href="/pages/alerts" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="alerts">
+        <i data-lucide="bell-ring" class="w-5 h-5"></i>
+        <span>Alerts</span>
+      </a>
+      <a href="/pages/traccar_setup" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="traccar_setup">
+        <i data-lucide="key-round" class="w-5 h-5"></i>
+        <span>Traccar Setup</span>
+      </a>
+      <a href="/pages/ai_setup" class="mobile-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all no-underline" data-page="ai_setup">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+        <span>AI Setup</span>
+      </a>
+    </nav>
+
+    <!-- Footer profile -->
+    <div class="p-4 border-t border-slate-100 flex-shrink-0 bg-slate-50/50">
+      <div class="flex items-center gap-2.5 px-1">
+        <div class="w-9 h-9 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm">
+          A
+        </div>
+        <div>
+          <div class="text-sm font-bold text-slate-800">Admin</div>
+          <div class="text-xs font-semibold text-slate-500">Connected</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- Lucide Icons CDN -->
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  // Highlight Active Page & Drawer Toggle Logic
+  (function() {
+    const path = window.location.pathname;
+    let pageName = path === '/' ? 'control_panel' : path.split('/').pop();
+    if (pageName === 'alert') pageName = 'alerts'; // details highlights alerts
+    
+    document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(link => {
+      if (link.getAttribute('data-page') === pageName) {
+        link.classList.add('bg-brand-100', 'text-brand-700', 'border-l-4', 'border-brand-600');
+        link.classList.remove('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+      } else {
+        link.classList.add('text-slate-600', 'hover:bg-slate-50', 'hover:text-slate-900');
+        link.classList.remove('bg-brand-100', 'text-brand-700', 'border-l-4', 'border-brand-600');
+      }
+    });
+
+    const toggleBtn = document.getElementById('mobile-sidebar-toggle');
+    const closeBtn = document.getElementById('mobile-sidebar-close');
+    const backdrop = document.getElementById('mobile-sidebar-backdrop');
+    const drawer = document.getElementById('mobile-sidebar-drawer');
+
+    if (toggleBtn && closeBtn && backdrop && drawer) {
+      function openSidebar() {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => {
+          backdrop.classList.add('opacity-100');
+          drawer.classList.remove('-translate-x-full');
+        }, 10);
+      }
+
+      function closeSidebar() {
+        backdrop.classList.remove('opacity-100');
+        drawer.classList.add('-translate-x-full');
+      }
+
+      backdrop.addEventListener('transitionend', (e) => {
+        if (e.target === backdrop && !backdrop.classList.contains('opacity-100')) {
+          backdrop.classList.add('hidden');
+        }
+      });
+
+      toggleBtn.addEventListener('click', openSidebar);
+      closeBtn.addEventListener('click', closeSidebar);
+      backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) closeSidebar();
+      });
+    }
+
+    if (window.lucide) {
+      window.lucide.createIcons();
+    }
+  })();
+</script>

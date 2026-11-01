@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Telemetry Dashboard</title>
+
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js for graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Tailwind Configuration to match your green theme -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f3fafb',
+                100: '#C1E6EC',
+                500: '#62B6DC',
+                600: '#1E6AA6',
+                700: '#185585',
+                800: '#4b6b80',
+                900: '#0b1d30',
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Lucide Icons for visual flair -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            /* slate-50 */
+        }
+
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 160px;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased min-h-screen bg-brand-50">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+        <div id="mock-warning-banner" class="mb-6 p-4 bg-amber-50 border border-amber-200 text-amber-800 text-sm font-semibold rounded-2xl flex items-center gap-3 shadow-sm" style="display: none;">
+            <div class="p-1.5 bg-amber-100 rounded-lg text-amber-700">
+                <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+            </div>
+            <span>Simulated data only, Raspberry Pi is turned off.</span>
+        </div>
+        <!-- Header -->
+        <header
+            class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <i data-lucide="activity" class="text-brand-600 w-7 h-7"></i>
+                    Real-time Telemetry
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">Monitoring live sensor data across all systems</p>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between md:justify-end gap-4">
+                <!-- AC Selector -->
+                <div class="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-lg border border-slate-100 shadow-sm">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Unit:</span>
+                    <select id="ac-selector" class="text-xs font-semibold bg-white text-slate-600 hover:text-slate-800 border border-slate-200 rounded-xl px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-brand-200 cursor-pointer">
+                        <option value="telemetry">Telemetry</option>
+                        <option value="AC1">AC1</option>
+                        <option value="AC2">AC2</option>
+                        <option value="AC3">AC3</option>
+                        <option value="AC4">AC4</option>
+                        <option value="AC5">AC5</option>
+                        <option value="AC6">AC6</option>
+                    </select>
+                </div>
+                <div class="text-sm text-slate-600 bg-slate-50 px-4 py-2 rounded-lg border border-slate-100">
+                    Showing latest <strong id="point-count" class="text-brand-600 font-semibold">10</strong> readings
+                </div>
+                <button id="refresh"
+                    class="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-sm font-medium rounded-xl transition-all shadow-sm shadow-brand-100/50 border-0 cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+                    Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Charts Grid -->
+        <div id="charts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Charts will be injected here -->
+        </div>
+
+        <!-- Error/Loading State -->
+        <div id="status-message"
+            class="hidden mt-6 text-center text-sm text-slate-500 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        const numericColumns = [
+            'dht_temp', 'dht_humidity', 'vibration',
+            'ds18b20_temp1', 'ds18b20_temp2', 'pzem_voltage', 'pzem_current',
+            'pzem_power', 'pzem_energy', 'pzem_frequency', 'pzem_power_factor'
+        ];
+
+        function getColumnMetadata(k) {
+            const map = {
+                dht_temp: { name: 'AC Output Temp', icon: 'thermometer', color: '#ef4444', unit: '°C' },
+                dht_humidity: { name: 'AC Output Humidity', icon: 'droplets', color: '#3b82f6', unit: '%' },
+                vibration: { name: 'Compressor Vibration', icon: 'vibrate', color: '#8b5cf6', unit: 'Hz' },
+                ds18b20_temp1: { name: 'Compressor Outlet Temp', icon: 'thermometer-sun', color: '#f97316', unit: '°C' },
+                ds18b20_temp2: { name: 'Compressor Inlet Temp', icon: 'thermometer-snowflake', color: '#06b6d4', unit: '°C' },
+                pzem_voltage: { name: 'Grid Voltage', icon: 'zap', color: '#eab308', unit: 'V' },
+                pzem_current: { name: 'Current Draw', icon: 'activity', color: '#10b981', unit: 'A' },
+                pzem_power: { name: 'Active Power', icon: 'power', color: '#ec4899', unit: 'W' },
+                pzem_energy: { name: 'Daily Energy', icon: 'battery-charging', color: '#14b8a6', unit: 'kWh' },
+                pzem_frequency: { name: 'AC Frequency', icon: 'waves', color: '#6366f1', unit: 'Hz' },
+                pzem_power_factor: { name: 'Power Factor', icon: 'percent', color: '#64748b', unit: 'PF' }
+            };
+            return map[k] || { name: k, icon: 'bar-chart-2', color: '#1E6AA6', unit: '' };
+        }
+
+        const chartsEl = document.getElementById('charts');
+        const pointCountEl = document.getElementById('point-count');
+        const statusMessageEl = document.getElementById('status-message');
+        const refreshIcon = document.getElementById('refresh-icon');
+        let chartInstances = {}; // Store instances to update them instead of destroying
+
+        // Force display timestamps as Philippine Time (UTC+8) with full date and time.
+        function toPhilippineDateTimeLabel(timestamp) {
+            if (!timestamp) return '--';
+
+            let parsed;
+            if (typeof timestamp === 'string' && /^\d{1,2}:\d{2}(?::\d{2})?$/.test(timestamp.trim())) {
+                const timeOnly = timestamp.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+                const now = new Date();
+                parsed = new Date(
+                    now.getFullYear(),
+                    now.getMonth(),
+                    now.getDate(),
+                    Number(timeOnly[1]),
+                    Number(timeOnly[2]),
+                    Number(timeOnly[3] || '0')
+                );
+            } else {
+                let tsStr = String(timestamp).trim();
+                if (tsStr.includes(' ') && !tsStr.includes('T')) {
+                    tsStr = tsStr.replace(' ', 'T');
+                }
+                if (/([+-]\d{2})$/.test(tsStr)) {
+                    tsStr = tsStr + ":00";
+                } else if (!/([+-]\d{2}(:?\d{2})?|Z)$/i.test(tsStr)) {
+                    tsStr = tsStr + "+08:00";
+                }
+                parsed = new Date(tsStr);
+            }
+
+            if (Number.isNaN(parsed.getTime())) return String(timestamp);
+
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone: 'Asia/Manila',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            const parts = formatter.formatToParts(parsed);
+            const partMap = {};
+            parts.forEach(p => partMap[p.type] = p.value);
+            return `${partMap.year}-${partMap.month}-${partMap.day} ${partMap.hour}:${partMap.minute}:${partMap.second}`;
+        }
+
+        // Setup DOM for a chart card
+        function createChartCard(colId, meta) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'bg-white rounded-2xl p-5 shadow-sm border border-slate-100 hover:shadow-md transition-shadow group';
+            wrapper.id = `card-${colId}`;
+
+            wrapper.innerHTML = `
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                        <div class="p-1.5 rounded-lg bg-slate-50 group-hover:bg-slate-100 transition-colors">
+                            <i data-lucide="${meta.icon}" class="w-4 h-4" style="color: ${meta.color}"></i>
+                        </div>
+                        ${meta.name}
+                    </h3>
+                    <span class="text-xs font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded-md" id="latest-val-${colId}">-- ${meta.unit}</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="canvas-${colId}"></canvas>
+                </div>
+            `;
+            chartsEl.appendChild(wrapper);
+            lucide.createIcons({ root: wrapper }); // Render the new icon
+            return wrapper.querySelector('canvas');
+        }
+
+        // Initialize a new Chart.js instance
+        function buildChart(ctx, labels, data, meta) {
+            // Create a gradient fill
+            const gradient = ctx.createLinearGradient(0, 0, 0, 160);
+
+            // Convert hex color to rgba for gradient
+            const hexToRgb = (hex) => {
+                const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+                return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '16, 185, 129';
+            };
+            const rgbColor = hexToRgb(meta.color);
+
+            gradient.addColorStop(0, `rgba(${rgbColor}, 0.2)`);
+            gradient.addColorStop(1, `rgba(${rgbColor}, 0)`);
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: meta.name,
+                        data,
+                        borderColor: meta.color,
+                        backgroundColor: gradient,
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: meta.color,
+                        pointBorderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        tension: 0.4 // Smooth curves
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: false, // Hide x axis for cleaner look
+                        },
+                        y: {
+                            beginAtZero: false,
+                            border: { display: false },
+                            grid: { color: '#f1f5f9', drawTicks: false },
+                            ticks: {
+                                font: { size: 10, family: "'Inter', sans-serif" },
+                                color: '#94a3b8',
+                                padding: 8,
+                                maxTicksLimit: 5
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { family: "'Inter', sans-serif", size: 12, weight: 'normal' },
+                            bodyFont: { family: "'Inter', sans-serif", size: 13, weight: 'bold' },
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function (context) {
+                                    return `${context.formattedValue} ${meta.unit}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- Mock Data Generator (For preview purposes) ---
+        let mockState = [];
+        function generateMockData() {
+            if (mockState.length === 0) {
+                let now = new Date();
+                for (let i = 10; i > 0; i--) {
+                    mockState.push({
+                        timestamp: new Date(now.getTime() - i * 10000).toLocaleTimeString(),
+                        dht_temp: 22 + Math.random() * 2,
+                        dht_humidity: 45 + Math.random() * 5,
+                        vibration: 5 + Math.random() * 2,
+                        ds18b20_temp1: 15 + Math.random() * 3,
+                        ds18b20_temp2: 60 + Math.random() * 5,
+                        pzem_voltage: 220 + Math.random() * 4 - 2,
+                        pzem_current: 4 + Math.random(),
+                        pzem_power: 880 + Math.random() * 50,
+                        pzem_energy: 1500 + Math.random() * 2,
+                        pzem_frequency: 50 + Math.random() * 0.2 - 0.1,
+                        pzem_power_factor: 0.95 + Math.random() * 0.04
+                    });
+                }
+            } else {
+                const last = mockState[mockState.length - 1];
+                mockState.shift();
+                mockState.push({
+                    timestamp: new Date().toLocaleTimeString(),
+                    dht_temp: last.dht_temp + (Math.random() - 0.5),
+                    dht_humidity: last.dht_humidity + (Math.random() - 0.5) * 2,
+                    vibration: last.vibration + (Math.random() - 0.5),
+                    ds18b20_temp1: last.ds18b20_temp1 + (Math.random() - 0.5),
+                    ds18b20_temp2: last.ds18b20_temp2 + (Math.random() - 0.5) * 2,
+                    pzem_voltage: 220 + (Math.random() - 0.5) * 4,
+                    pzem_current: last.pzem_current + (Math.random() - 0.5) * 0.5,
+                    pzem_power: last.pzem_power + (Math.random() - 0.5) * 30,
+                    pzem_energy: last.pzem_energy + 0.5,
+                    pzem_frequency: 50 + (Math.random() - 0.5) * 0.2,
+                    pzem_power_factor: Math.min(1, Math.max(0.8, last.pzem_power_factor + (Math.random() - 0.5) * 0.02))
+                });
+            }
+            return [...mockState];
+        }
+
+        let activeAC = localStorage.getItem('data_gathered_active_ac') || 'telemetry';
+        const acSelector = document.getElementById('ac-selector');
+        if (acSelector) {
+            acSelector.value = activeAC;
+            acSelector.addEventListener('change', (e) => {
+                activeAC = e.target.value;
+                localStorage.setItem('data_gathered_active_ac', activeAC);
+                renderLatest();
+            });
+        }
+
+        async function fetchRows() {
+            const res = await fetch(`/telemetry?ac_unit=${encodeURIComponent(activeAC)}`);
+            if (!res.ok) throw new Error('Network response was not ok');
+            return await res.json();
+        }
+
+        async function renderLatest() {
+            // Spin animation on refresh icon
+            refreshIcon.classList.add('animate-spin');
+            statusMessageEl.classList.add('hidden');
+            document.getElementById('mock-warning-banner').style.display = 'none';
+
+            try {
+                const rows = await fetchRows();
+                if (!rows || rows.length === 0) {
+                    statusMessageEl.textContent = 'No real telemetry data available for this AC unit.';
+                    statusMessageEl.classList.remove('hidden');
+                    document.getElementById('charts').innerHTML = '';
+                    chartInstances = {};
+                    pointCountEl.textContent = 0;
+                    return;
+                }
+                const latest = rows.length > 10 ? rows.slice(-10) : rows.slice();
+                pointCountEl.textContent = latest.length;
+
+                const labels = latest.map(r => toPhilippineDateTimeLabel(r.timestamp));
+
+                // Initial build or Update
+                for (const col of numericColumns) {
+                    const values = latest.map(r => r[col] === null ? null : Number(r[col]).toFixed(2));
+                    const latestValue = values[values.length - 1];
+                    const meta = getColumnMetadata(col);
+
+                    if (!chartInstances[col]) {
+                        // Create chart and DOM if it doesn't exist
+                        const canvas = createChartCard(col, meta);
+                        const ctx = canvas.getContext('2d');
+                        chartInstances[col] = buildChart(ctx, labels, values, meta);
+                    } else {
+                        // Update existing chart (provides smooth animations)
+                        chartInstances[col].data.labels = labels;
+                        chartInstances[col].data.datasets[0].data = values;
+                        chartInstances[col].update();
+                    }
+
+                    // Update the latest value badge
+                    const badge = document.getElementById(`latest-val-${col}`);
+                    if (badge && latestValue) {
+                        badge.textContent = `${latestValue} ${meta.unit}`;
+                    }
+                }
+            } catch (e) {
+                statusMessageEl.textContent = 'Unable to load telemetry data. Please check your backend connection.';
+                statusMessageEl.classList.remove('hidden');
+                console.error(e);
+            } finally {
+                setTimeout(() => refreshIcon.classList.remove('animate-spin'), 500);
+            }
+        }
+
+        document.getElementById('refresh').addEventListener('click', renderLatest);
+        renderLatest();
+
+        // Poll every 5 seconds (sped up slightly from 10s for better preview experience)
+        const poll = setInterval(renderLatest, 5000);
+        window.addEventListener('beforeunload', () => clearInterval(poll));
+    </script>
+  </div>
+</body>
+
+</html>

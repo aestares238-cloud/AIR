@@ -1,0 +1,1153 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alert Details</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f3fafb',
+              100: '#C1E6EC',
+              500: '#62B6DC',
+              600: '#1E6AA6',
+              700: '#185585',
+              800: '#4b6b80',
+              900: '#0b1d30',
+            },
+            accent: '#bb2233'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for a cleaner look */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Styled scrollbar for the analysis panels */
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Card micro-animations and premium styling */
+    .finding-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .finding-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.04), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+      border-color: rgba(30, 106, 166, 0.2);
+    }
+
+    /* Hide default scrollbars for tabs */
+    .scrollbar-none::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-none {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-brand-50 text-slate-800 font-sans min-h-screen">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+
+  <!-- Main Content -->
+  <main class="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto w-full">
+    
+    <!-- Page Header -->
+    <header class="mb-6 sm:mb-8 flex items-center justify-between">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-bold text-brand-900 tracking-tight">Alert Details</h1>
+        <p id="meta" class="text-sm sm:text-base text-slate-500 mt-1 font-medium">Loading alert metadata...</p>
+      </div>
+    </header>
+
+    <!-- Summary Card -->
+    <section class="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 mb-6 transition-all">
+      <div class="flex items-center justify-between flex-wrap gap-3 mb-2">
+        <h2 class="text-lg font-semibold text-slate-800 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          Summary
+        </h2>
+        <div id="overall-status-container" class="text-slate-600 font-semibold text-sm">
+          Status: <span id="overall-status-val">Loading...</span>
+        </div>
+      </div>
+      <p id="summary" class="text-slate-600 leading-relaxed font-semibold">Loading summary...</p>
+    </section>
+
+    <!-- What to do now (built from the saved action plan) -->
+    <section id="action-plan" class="hidden mb-8"></section>
+
+    <!-- Diagnoses Section -->
+    <section class="mb-8">
+      <!-- Status banner populated by JS -->
+      <div id="status-banner" class="mb-5 hidden"></div>
+
+      <!-- Readings when the alert fired (the 9 real sensors) -->
+      <div id="readings-panel" class="hidden mb-6"></div>
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <h3 class="text-xl font-bold text-brand-900 tracking-tight">What's Wrong?</h3>
+      </div>
+
+      <!-- Interactive Filter Toolbar -->
+      <div class="mb-6 flex flex-col sm:flex-row gap-3 items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm transition-all duration-300">
+        <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-none">
+          <button id="filter-ALL" onclick="setSeverityFilter('ALL')" class="px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-1.5 border-0 cursor-pointer">
+            <span>All Issues</span>
+            <span id="cnt-ALL" class="bg-white/20 text-white px-1.5 py-0.5 rounded-md text-[10px]">0</span>
+          </button>
+          <button id="filter-HIGH_CRITICAL" onclick="setSeverityFilter('HIGH_CRITICAL')" class="px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-1.5 border-0 cursor-pointer">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+            <span>Urgent/High</span>
+            <span id="cnt-HIGH_CRITICAL" class="px-1.5 py-0.5 rounded-md text-[10px]">0</span>
+          </button>
+          <button id="filter-MEDIUM" onclick="setSeverityFilter('MEDIUM')" class="px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-1.5 border-0 cursor-pointer">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>Caution</span>
+            <span id="cnt-MEDIUM" class="px-1.5 py-0.5 rounded-md text-[10px]">0</span>
+          </button>
+          <button id="filter-LOW" onclick="setSeverityFilter('LOW')" class="px-3.5 py-2 text-xs font-bold rounded-xl transition-all duration-200 flex items-center gap-1.5 border-0 cursor-pointer">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span>Info</span>
+            <span id="cnt-LOW" class="px-1.5 py-0.5 rounded-md text-[10px]">0</span>
+          </button>
+        </div>
+        <div class="relative w-full sm:w-64 flex-shrink-0">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+            <i data-lucide="search" class="w-4 h-4"></i>
+          </span>
+          <input type="text" id="search-input" oninput="handleSearch(this.value)" placeholder="Search diagnostic issues..." class="pl-9 pr-4 py-2 w-full text-xs font-semibold rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-600/20 transition-all">
+        </div>
+      </div>
+      
+      <!-- Two-panel layout: Rule Engine + AI -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+        <!-- PANEL A: Rule Engine -->
+        <div>
+          <div class="flex items-center gap-2 mb-3 px-1">
+            <div class="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center shadow-sm">
+              <i data-lucide="shield-check" class="w-4 h-4 text-brand-600"></i>
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-slate-800">Problems found</h4>
+              <p class="text-xs text-slate-500">Checked against this AC's own limits</p>
+            </div>
+          </div>
+          <div id="rule-container" class="space-y-3 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
+            <div class="animate-pulse bg-white p-5 rounded-2xl border border-slate-200">
+              <div class="h-3 bg-slate-200 rounded w-3/4 mb-3"></div>
+              <div class="h-3 bg-slate-200 rounded w-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL B: AI Diagnosis -->
+        <div>
+          <div class="flex items-center gap-2 mb-3 px-1">
+            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shadow-sm">
+              <i data-lucide="brain" class="w-4 h-4 text-blue-600"></i>
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-slate-800">AI opinion (optional)</h4>
+              <p class="text-xs text-slate-500">A second opinion, when an AI key is set up</p>
+            </div>
+          </div>
+          <div id="diagnoses-container" class="space-y-3 max-h-[520px] overflow-y-auto pr-1 custom-scrollbar">
+            <!-- Skeleton Loading State -->
+            <div class="animate-pulse flex space-x-4 bg-white p-6 rounded-2xl border border-slate-200">
+              <div class="flex-1 space-y-4 py-1">
+                <div class="h-4 bg-slate-200 rounded w-3/4"></div>
+                <div class="space-y-2">
+                  <div class="h-4 bg-slate-200 rounded"></div>
+                  <div class="h-4 bg-slate-200 rounded w-5/6"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Computation Steps (full-width, collapsible) -->
+      <div class="mt-8 bg-slate-900 rounded-2xl p-5 border border-slate-800 shadow-md">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <button id="toggle-steps" onclick="toggleComputationSteps()" 
+            class="flex items-center gap-2 text-sm font-semibold text-slate-300 hover:text-white transition-colors group bg-transparent border-0 cursor-pointer">
+            <i data-lucide="terminal" class="w-4 h-4 text-emerald-400 group-hover:text-emerald-300"></i>
+            <span>Show Algorithm Computation Steps (technical)</span>
+            <i data-lucide="chevron-down" id="steps-chevron" class="w-4 h-4 text-slate-400 transition-transform"></i>
+          </button>
+          
+          <!-- Interactive Table Filter -->
+          <div id="table-filter-group" class="hidden flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+            <button onclick="setTableFilter('ALL')" id="tbl-filter-ALL" class="px-2.5 py-1 text-[10px] font-bold rounded border-0 cursor-pointer bg-slate-800 text-white transition-all">All Steps</button>
+            <button onclick="setTableFilter('TRIGGERED')" id="tbl-filter-TRIGGERED" class="px-2.5 py-1 text-[10px] font-bold rounded border-0 cursor-pointer text-slate-400 hover:text-white transition-all bg-transparent">Triggered Only</button>
+            <button onclick="setTableFilter('PASS')" id="tbl-filter-PASS" class="px-2.5 py-1 text-[10px] font-bold rounded border-0 cursor-pointer text-slate-400 hover:text-white transition-all bg-transparent">Passed Only</button>
+          </div>
+        </div>
+
+        <div id="computation-steps" class="hidden mt-4 pt-4 border-t border-slate-800 overflow-x-auto">
+          <p class="text-xs text-slate-500 mb-3 font-mono">// Step-by-step evaluation of each sensor against thresholds</p>
+          <table class="w-full text-xs font-mono text-left">
+            <thead>
+              <tr class="text-slate-400 border-b border-slate-800">
+                <th class="pb-2 pr-4 font-semibold">Sensor</th>
+                <th class="pb-2 pr-4 font-semibold">Measured</th>
+                <th class="pb-2 pr-4 font-semibold">Normal Range</th>
+                <th class="pb-2 pr-4 font-semibold">Expression / Result</th>
+                <th class="pb-2 font-semibold">Verdict</th>
+              </tr>
+            </thead>
+            <tbody id="steps-tbody" class="divide-y divide-slate-800">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-center gap-3 mt-8 pt-6 border-t border-slate-200">
+      <a href="/pages/alerts" class="w-full sm:w-auto text-center px-6 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors focus:ring-2 focus:ring-slate-400 focus:outline-none no-underline">
+        &larr; Back to Alerts
+      </a>
+      <button id="delete-btn" class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 font-medium transition-colors border border-red-200 focus:ring-2 focus:ring-red-400 focus:outline-none cursor-pointer">
+        Delete Alert
+      </button>
+    </div>
+
+  </main>
+
+  <!-- Custom Confirmation Modal -->
+  <div id="delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
+    <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" id="modal-backdrop"></div>
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative z-10 fade-in transform transition-all scale-100">
+      <div class="flex items-center gap-4 mb-4">
+        <div class="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900">Delete this alert?</h3>
+          <p class="text-sm text-slate-500 mt-1">This action cannot be undone. The alert data will be permanently removed.</p>
+        </div>
+      </div>
+      <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+        <button id="cancel-delete" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors border-0 cursor-pointer">
+          Cancel
+        </button>
+        <button id="confirm-delete" class="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-medium transition-colors shadow-sm border-0 cursor-pointer">
+          Yes, Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // State management
+    let rawDiagnosesData = null;
+    let activeFilter = 'ALL';
+    let searchQuery = '';
+    let activeTableFilter = 'ALL';
+
+    function cleanAndParseJSON(text) {
+      if (!text) return null;
+      let clean = text.trim();
+      
+      // Try direct parse
+      try {
+        return JSON.parse(clean);
+      } catch (e) {}
+      
+      // Remove markdown fences
+      if (clean.startsWith('```')) {
+        const lines = clean.split('\n');
+        if (lines[0].startsWith('```')) {
+          lines.shift();
+        }
+        if (lines.length > 0 && lines[lines.length - 1].trim() === '```') {
+          lines.pop();
+        }
+        clean = lines.join('\n').trim();
+        try {
+          return JSON.parse(clean);
+        } catch (e) {}
+      }
+      
+      // Find JSON bounds
+      const start = clean.indexOf('{');
+      const end = clean.lastIndexOf('}');
+      if (start !== -1 && end !== -1 && end > start) {
+        try {
+          return JSON.parse(clean.substring(start, end + 1));
+        } catch (e) {}
+      }
+      
+      return null;
+    }
+
+    // Example data fallback for previewing without a backend
+    const mockData = {
+      id: "ALT-84920",
+      timestamp: new Date().toISOString(),
+      summary: "Abnormal power consumption and lack of cooling detected on Window AC Unit #4.",
+      diagnoses: "{\n  \"diagnoses\": [\n    {\n      \"issue\": \"Compressor Failure to Start or Control Board Malfunction\",\n      \"status\": \"Current\",\n      \"confidence_score\": 98,\n      \"root_cause\": \"Power consumption is only 66.4W, well below the expected 1700–1820W range. Current draw is 0.287A, indicating only the fan or control circuit is running. Suction and discharge line temperatures are nearly equal (35.4°C and 36.3°C), confirming the refrigeration cycle is not active. Compressor vibration is 0.0 Hz, indicating no mechanical operation.\",\n      \"severity\": \"High\",\n      \"recommended_action\": \"Inspect the compressor contactor, start capacitor, and thermostat signal. Verify if the compressor receives a start signal. Test the start capacitor for capacitance and ESR. If capacitor is good, check control board output and compressor windings for continuity and insulation resistance.\"\n    },\n    {\n      \"issue\": \"Stuck or Malfunctioning Thermostat Setting\",\n      \"status\": \"Current\",\n      \"confidence_score\": 90,\n      \"root_cause\": \"Thermostat is set to 10°C, which is abnormally low for a room air conditioner and likely below the cooling threshold. However, despite this setting, the compressor is not running, which suggests either a thermostat calibration error, incorrect mode setting (e.g., fan-only), or a communication fault between thermostat and compressor control.\",\n      \"severity\": \"Medium\",\n      \"recommended_action\": \"Verify thermostat operation by adjusting to a more typical setpoint (e.g., 22–24°C). Check if the unit attempts to cool. If no response, inspect thermostat wiring and control board inputs. Consider recalibration or replacement if faulty.\"\n    },\n    {\n      \"issue\": \"Potential Start Capacitor Degradation (Predicted Failure)\",\n      \"status\": \"Predicted\",\n      \"confidence_score\": 75,\n      \"root_cause\": \"Low power draw and lack of compressor start despite correct voltage and thermostat call suggest a weak or failed start capacitor. Although not confirmed without physical testing, this is a common failure mode in non-inverter window units with manual start circuits.\",\n      \"severity\": \"Medium\",\n      \"recommended_action\": \"Test the start capacitor with a multimeter or ESR meter. Replace if capacitance is outside ±10% of rated value or if bulging/leaking is observed. Proactively replace if unit is over 3 years old and no prior maintenance.\"\n    },\n    {\n      \"issue\": \"Low Risk of Airflow Restriction or Refrigerant Issues (Currently Normal)\",\n      \"status\": \"Current\",\n      \"confidence_score\": 85,\n      \"root_cause\": \"Dust level is 0.0, indicating a clean filter. Suction line temperature is not abnormally low (not near freezing), and discharge temperature is within normal range, suggesting no refrigerant overcharge or blockage at this time.\",\n      \"severity\": \"Low\",\n      \"recommended_action\": \"Continue monitoring dust levels. Schedule filter inspection every 3 months even if sensor reads low, as sensor may fail silently.\"\n    }\n  ]\n}"
+    };
+
+    function getQueryParam(name) {
+      const u = new URL(window.location.href);
+      return u.searchParams.get(name);
+    }
+
+    // Modal Logic
+    const modal = document.getElementById('delete-modal');
+    const deleteBtn = document.getElementById('delete-btn');
+    const cancelBtn = document.getElementById('cancel-delete');
+    const confirmBtn = document.getElementById('confirm-delete');
+    const backdrop = document.getElementById('modal-backdrop');
+
+    const toggleModal = (show) => {
+      if (show) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      } else {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    };
+
+    deleteBtn.addEventListener('click', () => toggleModal(true));
+    cancelBtn.addEventListener('click', () => toggleModal(false));
+    backdrop.addEventListener('click', () => toggleModal(false));
+
+    // ─── Lookup tables for friendly, plain-English display ────────────
+    const SENSOR_INFO = {
+      pzem_power:        { label: 'Power Usage',              icon: 'zap',         hint: 'How much electricity the AC is drawing' },
+      pzem_voltage:      { label: 'Electricity Supply',       icon: 'plug',        hint: 'Voltage from the wall outlet' },
+      pzem_current:      { label: 'Operating Current',        icon: 'activity',    hint: 'Operating current draw of the AC unit' },
+      pzem_frequency:    { label: 'Power Grid Stability',     icon: 'activity',    hint: 'Stability of the electrical supply' },
+      pzem_power_factor: { label: 'Motor Efficiency',         icon: 'gauge',       hint: 'How efficiently the motor uses power' },
+      dht_temp:          { label: 'AC Output Temperature',    icon: 'thermometer', hint: 'Temperature of supply air' },
+      dht_humidity:      { label: 'AC Output Humidity',       icon: 'droplets',    hint: 'Humidity of supply air' },
+      ds18b20_temp1:     { label: 'Compressor Heat (outlet)', icon: 'thermometer', hint: 'Temperature leaving the compressor' },
+      ds18b20_temp2:     { label: 'Cooling Pipe Temperature', icon: 'snowflake',   hint: 'Temperature of the refrigerant return line' },
+      vibration:         { label: 'Compressor Vibration',     icon: 'vibrate',     hint: 'How much the compressor is shaking' },
+    };
+
+    const SEV_LABEL = { Critical:'Urgent', High:'High', Medium:'Caution', Low:'Note', Normal:'All Clear' };
+    const SEV_BG    = { Critical:'bg-red-600', High:'bg-red-500', Medium:'bg-amber-500', Low:'bg-emerald-500', Normal:'bg-emerald-500' };
+    const SEV_CARD  = {
+      Critical:'bg-red-50 border-red-200 text-red-900',
+      High:    'bg-red-50 border-red-200 text-red-900',
+      Medium:  'bg-amber-50 border-amber-200 text-amber-900',
+      Low:     'bg-emerald-50 border-emerald-200 text-emerald-900',
+      Normal:  'bg-slate-50 border-slate-200 text-slate-800',
+    };
+
+    // ─── Severity Helpers ──────────────────────────────────────────
+    const getSeverityStyles = (s) => SEV_CARD[s] || SEV_CARD.Normal;
+    const getSeverityBadge  = (s) => (SEV_BG[s] || 'bg-slate-500') + ' text-white';
+    const getRuleStepColor  = (r) => r === 'TRIGGERED' ? 'text-red-400' : r === 'PASS' ? 'text-emerald-400' : 'text-slate-500';
+
+    // Which kind of attention the AC needs. The WORST problem decides, not the first one found.
+    function getACConditionStatus(severity, issue, sensorKey) {
+      const iss = (issue || '').toLowerCase();
+      const key = (sensorKey || '').toLowerCase();
+      const byKey = {
+        individual_current_high: 'Need Repair', compressor_overheating: 'Need Repair', individual_power_high: 'Need Repair',
+        high_voltage: 'Check Power Supply', low_voltage: 'Check Power Supply'
+      };
+      if (byKey[key]) return byKey[key];
+      if (key.includes('offline') || iss.includes('offline')) return 'Check Sensor';
+      if (key.includes('voltage') || iss.includes('voltage')) return 'Check Power Supply';
+      if (severity === 'Critical' || iss.includes('overload') || iss.includes('overheating') || (iss.includes('high') && iss.includes('current'))) return 'Need Repair';
+      if (key || iss) {
+        if (severity === 'High' || severity === 'Medium') return 'Need Maintenance';
+        if (severity === 'Low') return 'Need Maintenance';
+      }
+      return 'Good condition';
+    }
+
+    const STATUS_RANK = { 'Need Repair': 5, 'Check Power Supply': 4, 'Need Maintenance': 3, 'Check Sensor': 2, 'Need Cleaning': 1, 'Good condition': 0 };
+    function worstStatus(list) {
+      let best = 'Good condition';
+      list.forEach(s => { if ((STATUS_RANK[s] || 0) > (STATUS_RANK[best] || 0)) best = s; });
+      return best;
+    }
+
+    function getACConditionColorClass(status) {
+      if (status === 'Need Repair') return 'text-red-600 font-extrabold text-sm ml-1';
+      if (status === 'Check Power Supply') return 'text-amber-600 font-extrabold text-sm ml-1';
+      if (status === 'Need Maintenance') return 'text-rose-500 font-extrabold text-sm ml-1';
+      if (status === 'Check Sensor') return 'text-violet-600 font-extrabold text-sm ml-1';
+      if (status === 'Need Cleaning') return 'text-blue-600 font-extrabold text-sm ml-1';
+      return 'text-emerald-600 font-extrabold text-sm ml-1';
+    }
+
+    function cleanIssueText(text) {
+      if (!text) return '';
+      return text.replace(/\b(on|for|of|at)?\s*AC\d+\b/gi, '').trim();
+    }
+
+    function cleanSummaryText(text) {
+      if (!text) return '';
+      return text.replace(/\b(on|for|of|at)?\s*AC\d+\b/gi, '')
+                 .replace(/Window AC Unit #\d+/gi, 'Air Conditioner')
+                 .replace(/AC unit = 'AC\d+'/gi, 'Air Conditioner')
+                 .replace(/\s+/g, ' ')
+                 .trim();
+    }
+
+    function updateOverallStatusUI() {
+      let overallStatus = 'Good condition';
+      if (rawDiagnosesData) {
+        const ruleResult = rawDiagnosesData.rule_diagnoses;
+        const ruleFindings = (ruleResult && ruleResult.findings) || [];
+        
+        let aiDiagnoses = rawDiagnosesData.ai_diagnoses;
+        if (aiDiagnoses && aiDiagnoses.raw && !aiDiagnoses.diagnoses) {
+          const parsedRaw = cleanAndParseJSON(aiDiagnoses.raw);
+          if (parsedRaw && parsedRaw.diagnoses) aiDiagnoses = parsedRaw;
+        }
+        const aiList = (aiDiagnoses && aiDiagnoses.diagnoses) || [];
+        
+        const statuses = [];
+        ruleFindings.forEach(f => {
+          statuses.push(getACConditionStatus(f.severity, f.issue, f.sensor_key));
+        });
+        aiList.forEach(d => {
+          statuses.push(getACConditionStatus(d.severity, d.issue, ''));
+        });
+
+        const hasPlan = rawDiagnosesData.action_plan && rawDiagnosesData.action_plan.steps && rawDiagnosesData.action_plan.steps.length > 0;
+        overallStatus = statuses.length > 0 ? worstStatus(statuses) : (hasPlan ? 'Need Maintenance' : 'Good condition');
+      }
+      
+      const valSpan = document.getElementById('overall-status-val');
+      if (valSpan) {
+        valSpan.textContent = overallStatus;
+        valSpan.className = getACConditionColorClass(overallStatus);
+      }
+    }
+
+    // ─── Range bar helper ──────────────────────────────────────────
+    function buildRangeBar(value, normalRange, unit) {
+      const parts = normalRange.replace(unit, '').split('\u2013').map(s => parseFloat(s.trim()));
+      if (parts.length < 2 || isNaN(parts[0]) || isNaN(parts[1])) return '';
+      const [nMin, nMax] = parts;
+      const buf = Math.max((nMax - nMin) * 1.5, 1);
+      const dMin = Math.max(0, nMin - buf), dMax = nMax + buf, span = dMax - dMin;
+      const zoneL = ((nMin - dMin) / span * 100).toFixed(1);
+      const zoneW = ((nMax - nMin) / span * 100).toFixed(1);
+      const vPos  = Math.min(97, Math.max(3, (value - dMin) / span * 100)).toFixed(1);
+      const bad   = value < nMin || value > nMax;
+      const mc    = bad ? 'bg-red-500' : 'bg-emerald-500';
+      const dir   = value > nMax ? 'Too High' : value < nMin ? 'Too Low' : 'Normal';
+      const dirC  = bad ? 'text-red-600' : 'text-emerald-600';
+      return `
+        <div class="mt-3 mb-1">
+          <div class="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Low</span><span class="font-semibold text-slate-600 text-center">Safe: ${nMin}\u2013${nMax} ${unit}</span><span>High</span>
+          </div>
+          <div class="relative h-4 rounded-full bg-slate-100 overflow-hidden">
+            <div class="absolute h-full bg-emerald-200 border-x-2 border-emerald-400 rounded-full" style="left:${zoneL}%;width:${zoneW}%"></div>
+            <div class="absolute top-0 h-full w-2 -translate-x-1/2 rounded-full ${mc} ring-2 ring-white shadow" style="left:${vPos}%"></div>
+          </div>
+          <div class="flex justify-between mt-1 text-xs">
+            <span class="text-slate-400">Your reading: <strong>${value} ${unit}</strong></span>
+            <span class="font-bold ${dirC}">${dir}</span>
+          </div>
+        </div>`;
+    }
+
+    // ─── Parse numbered action steps ───────────────────────────────
+    function parseSteps(text) {
+      if (!text) return [];
+      const parts = text.split(/(?=\d+\.\s)/).map(s => s.replace(/^\d+\.\s*/, '').trim()).filter(Boolean);
+      return parts.length > 0 ? parts : [text];
+    }
+
+    // ─── Interactive filtering operations ──────────────────────────
+    function setSeverityFilter(filterVal) {
+      activeFilter = filterVal;
+      ['ALL', 'HIGH_CRITICAL', 'MEDIUM', 'LOW'].forEach(val => {
+        const btn = document.getElementById(`filter-${val}`);
+        if (!btn) return;
+        if (val === filterVal) {
+          btn.classList.add('bg-slate-800', 'text-white', 'shadow-sm');
+          btn.classList.remove('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        } else {
+          btn.classList.remove('bg-slate-800', 'text-white', 'shadow-sm');
+          btn.classList.add('bg-slate-100', 'text-slate-700', 'hover:bg-slate-200');
+        }
+      });
+      renderAllActive();
+    }
+
+    function handleSearch(val) {
+      searchQuery = val.toLowerCase().trim();
+      renderAllActive();
+    }
+
+    function setTableFilter(filterVal) {
+      activeTableFilter = filterVal;
+      ['ALL', 'TRIGGERED', 'PASS'].forEach(val => {
+        const btn = document.getElementById(`tbl-filter-${val}`);
+        if (!btn) return;
+        if (val === filterVal) {
+          btn.classList.add('bg-slate-800', 'text-white');
+          btn.classList.remove('text-slate-400', 'hover:text-white');
+        } else {
+          btn.classList.remove('bg-slate-800', 'text-white');
+          btn.classList.add('text-slate-400', 'hover:text-white');
+        }
+      });
+      renderTableOnly();
+    }
+
+    // ─── Copy to Clipboard ─────────────────────────────────────────
+    function copyToClipboard(text, buttonId) {
+      const cleanText = text.replace(/\\'/g, "'");
+      navigator.clipboard.writeText(cleanText).then(() => {
+        const btn = document.getElementById(buttonId);
+        if (!btn) return;
+        const originalHTML = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-600"></i><span class="text-emerald-700">Copied!</span>`;
+        lucide.createIcons();
+        setTimeout(() => {
+          btn.innerHTML = originalHTML;
+          lucide.createIcons();
+        }, 2000);
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+      });
+    }
+
+    // ─── Toggle Details inside Card ────────────────────────────────
+    function toggleDetails(id) {
+      const el = document.getElementById(`details-${id}`);
+      const chev = document.getElementById(`chevron-${id}`);
+      if (!el || !chev) return;
+      
+      const isHidden = el.classList.contains('hidden');
+      if (isHidden) {
+        el.classList.remove('hidden');
+        chev.style.transform = 'rotate(180deg)';
+      } else {
+        el.classList.add('hidden');
+        chev.style.transform = '';
+      }
+    }
+
+    // ─── Filter & Render counts in pills ────────────────────────────
+    function updateCounts() {
+      if (!rawDiagnosesData) return;
+
+      const ruleFindings = (rawDiagnosesData.rule_diagnoses && rawDiagnosesData.rule_diagnoses.findings) || [];
+      const aiList = (rawDiagnosesData.ai_diagnoses && rawDiagnosesData.ai_diagnoses.diagnoses) || [];
+
+      const isHigh = (sev) => sev === 'Critical' || sev === 'High';
+      const isMed = (sev) => sev === 'Medium';
+      const isLow = (sev) => sev === 'Low' || sev === 'Normal';
+
+      const allCount = ruleFindings.length + aiList.length;
+      const highCount = ruleFindings.filter(f => isHigh(f.severity)).length + aiList.filter(d => isHigh(d.severity)).length;
+      const medCount = ruleFindings.filter(f => isMed(f.severity)).length + aiList.filter(d => isMed(d.severity)).length;
+      const lowCount = ruleFindings.filter(f => isLow(f.severity)).length + aiList.filter(d => isLow(d.severity)).length;
+
+      document.getElementById('cnt-ALL').textContent = allCount;
+      document.getElementById('cnt-HIGH_CRITICAL').textContent = highCount;
+      document.getElementById('cnt-MEDIUM').textContent = medCount;
+      document.getElementById('cnt-LOW').textContent = lowCount;
+    }
+
+    // ─── Unified Render Entrypoint ─────────────────────────────────
+    function renderAllActive() {
+      if (!rawDiagnosesData) {
+        const container = document.getElementById('diagnoses-container');
+        container.innerHTML = '<div class="p-5 bg-red-50 border border-red-200 rounded-xl mb-4 text-red-700 text-sm">Failed to parse diagnostic data.</div>';
+        return;
+      }
+      renderRuleEngineView();
+      renderAIDiagnosesView();
+      renderTableOnly();
+    }
+
+    // ─── Render Rule Engine Panel ──────────────────────────────────
+    function renderRuleEngineView() {
+      const container = document.getElementById('rule-container');
+      container.innerHTML = '';
+
+      const ruleResult = rawDiagnosesData.rule_diagnoses;
+      if (!ruleResult) {
+        container.innerHTML = '<div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-slate-500 text-sm">No automatic check data available for this alert.</div>';
+        return;
+      }
+
+      // Overall status banner
+      const sev = ruleResult.overall_severity || 'Normal';
+      const banner = document.getElementById('status-banner');
+      if (banner) {
+        const bannerIcon = sev === 'Normal' ? 'check-circle' : sev === 'Low' ? 'info' : sev === 'Medium' ? 'alert-triangle' : 'alert-octagon';
+        const bannerBg   = sev === 'Normal' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : sev === 'Low' ? 'bg-blue-50 border-blue-200 text-blue-800' : sev === 'Medium' ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-red-50 border-red-200 text-red-800';
+        const bannerMsg  = sev === 'Normal' ? 'All sensors are within safe limits.' : `${ruleResult.sensors_triggered} problem${ruleResult.sensors_triggered === 1 ? '' : 's'} found. Steps are in What to do now above.`;
+        banner.className = `mb-5 flex items-center gap-3 p-4 rounded-2xl border ${bannerBg}`;
+        banner.innerHTML = `<i data-lucide="${bannerIcon}" class="w-5 h-5 flex-shrink-0"></i><div><p class="font-semibold text-sm">${SEV_LABEL[sev] || sev} — ${bannerMsg}</p></div>`;
+        banner.classList.remove('hidden');
+      }
+
+      let findings = ruleResult.findings || [];
+
+      // Sort findings by severity (Critical > High > Medium > Low)
+      const severityOrder = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
+      findings.sort((a, b) => (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0));
+
+      // Filter by Severity
+      if (activeFilter === 'HIGH_CRITICAL') {
+        findings = findings.filter(f => f.severity === 'Critical' || f.severity === 'High');
+      } else if (activeFilter === 'MEDIUM') {
+        findings = findings.filter(f => f.severity === 'Medium');
+      } else if (activeFilter === 'LOW') {
+        findings = findings.filter(f => f.severity === 'Low' || f.severity === 'Normal');
+      }
+
+      // Filter by Search Query
+      if (searchQuery) {
+        findings = findings.filter(f => {
+          const info = SENSOR_INFO[f.sensor_key] || { label: f.sensor, hint: '' };
+          return (f.issue || '').toLowerCase().includes(searchQuery) || 
+                 (f.root_cause || '').toLowerCase().includes(searchQuery) || 
+                 (info.label || '').toLowerCase().includes(searchQuery) ||
+                 (info.hint || '').toLowerCase().includes(searchQuery);
+        });
+      }
+
+      if (findings.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 bg-slate-50/50 border border-slate-200 border-dashed rounded-2xl text-slate-400 text-center flex flex-col items-center justify-center gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+            <span class="text-sm font-medium">No safety checks matching criteria.</span>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      // Summary row
+      container.insertAdjacentHTML('beforeend', `
+        <div class="rounded-2xl p-3 border ${getSeverityStyles(sev)} mb-1 bg-white/60">
+          <div class="flex justify-between text-xs font-semibold">
+            <span>Problems found: <strong class="${ruleResult.sensors_triggered > 0 ? 'text-red-600' : 'text-emerald-600'}">${ruleResult.sensors_triggered}</strong></span>
+            <span class="text-slate-400 font-medium">worst first</span>
+          </div>
+        </div>`);
+
+      const hasPlan = !!(rawDiagnosesData.action_plan && rawDiagnosesData.action_plan.steps && rawDiagnosesData.action_plan.steps.length);
+      findings.forEach((f, i) => {
+        const info   = SENSOR_INFO[f.sensor_key] || { label: f.sensor, icon: 'activity', hint: '' };
+        const card   = getSeverityStyles(f.severity);
+        const badge  = getSeverityBadge(f.severity);
+        const bar    = buildRangeBar(f.measured_value, f.normal_range, f.unit);
+        const step   = ((rawDiagnosesData.action_plan || {}).steps || []).find(x => x.id === f.sensor_key);
+        const combined = (f.sensor_key === 'compressor_overheating' || f.sensor_key === 'reduced_cooling');
+        const plainTitle = step ? step.title : info.label;
+        const normalText = f.sensor_key === 'compressor_overheating' ? 'Flagged only when current, power and vibration are all above their limits at the same time.'
+                         : f.sensor_key === 'reduced_cooling' ? 'Flagged only when the outlet, output and inlet temperatures are all too high at the same time.'
+                         : (f.normal_range || '');
+        const whyText = (step && step.why) || f.root_cause || '';
+        const statusText = getACConditionStatus(f.severity, f.issue, f.sensor_key);
+        const steps  = parseSteps(f.recommended_action);
+        const stepsHTML = steps.map((s, n) => `<li class="flex gap-2"><span class="font-bold flex-shrink-0 text-slate-400">${n+1}.</span><span>${s}</span></li>`).join('');
+        
+        container.insertAdjacentHTML('beforeend', `
+          <div class="finding-card rounded-2xl border ${card} overflow-hidden bg-white/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300 fade-in" style="animation-delay:${i*0.04}s">
+            <div class="flex items-center justify-between gap-3 px-4 pt-4 pb-2">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-white/80 flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-100">
+                  <i data-lucide="${info.icon}" class="w-5 h-5"></i>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}">${SEV_LABEL[f.severity] || f.severity}</span>
+                    <span class="text-[10px] opacity-60 font-medium">${f.status === 'Predicted' ? 'Possible future issue' : 'Happening now'}</span>
+                    <span class="${getACConditionColorClass(statusText)} !text-[11px] !ml-0">${statusText}</span>
+                  </div>
+                  <h5 class="font-bold text-sm mt-0.5 leading-tight text-slate-800">${plainTitle}</h5>
+                </div>
+              </div>
+              <button onclick="toggleDetails('rule-${i}')" class="p-1.5 hover:bg-slate-100 rounded-lg transition-all text-slate-400 hover:text-slate-600 border-0 bg-transparent cursor-pointer flex items-center justify-center">
+                <i data-lucide="chevron-down" id="chevron-rule-${i}" class="w-5 h-5 transition-transform duration-200" style="${i === 0 ? 'transform: rotate(180deg)' : ''}"></i>
+              </button>
+            </div>
+            
+            <div class="px-4 pb-1">${bar}</div>
+            
+            <div id="details-rule-${i}" class="${i === 0 ? '' : 'hidden '}mx-4 mb-3 mt-2 bg-white/90 rounded-xl p-4 border border-slate-100/50 space-y-3 text-sm">
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">What we measured</p>
+                <p class="font-semibold text-slate-800">${f.measured_value}</p>
+              </div>
+              <div>
+                <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">${combined ? 'When it is flagged' : 'Normal'}</p>
+                <p class="text-slate-700">${normalText}</p>
+              </div>
+              ${whyText ? `<div><p class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Why it matters</p><p class="text-slate-600">${whyText}</p></div>` : ''}
+
+${hasPlan ? `<p class="pt-3 border-t border-slate-100/50 text-[11px] text-slate-500 font-medium">The steps to take are in <strong>What to do now</strong> above.</p>` : `              <!-- 3. Required Maintenance -->
+              <div class="flex items-start gap-2.5 pt-3 border-t border-slate-100/50">
+                <div class="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0 border border-emerald-100">
+                  <i data-lucide="wrench" class="w-3.5 h-3.5 text-emerald-600"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                    <h6 class="font-bold text-slate-800 text-[11px] uppercase tracking-wider">3. Required Maintenance</h6>
+                    <button id="copy-btn-rule-${i}" onclick="copyToClipboard('${f.recommended_action.replace(/'/g, "\\'")}', 'copy-btn-rule-${i}')" class="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 transition-colors bg-transparent border-0 cursor-pointer">
+                      <i data-lucide="copy" class="w-3 h-3"></i>
+                      <span>Copy Actions</span>
+                    </button>
+                  </div>
+                  <ol class="space-y-1.5 text-slate-700 font-medium pl-0">${stepsHTML}</ol>
+                </div>
+              </div>
+`}
+            </div>
+          </div>`);
+      });
+
+      lucide.createIcons();
+    }
+
+    // ─── Render AI Diagnosis Panel ─────────────────────────────────
+    function renderAIDiagnosesView() {
+      const container = document.getElementById('diagnoses-container');
+      container.innerHTML = '';
+
+      let aiDiagnoses = rawDiagnosesData.ai_diagnoses;
+      if (aiDiagnoses && aiDiagnoses.raw && !aiDiagnoses.diagnoses) {
+        const parsedRaw = cleanAndParseJSON(aiDiagnoses.raw);
+        if (parsedRaw && parsedRaw.diagnoses) {
+          aiDiagnoses = parsedRaw;
+        }
+      }
+
+      if (!aiDiagnoses) {
+        container.innerHTML = '<div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-slate-500 text-sm">No AI opinion available for this alert.</div>';
+        return;
+      }
+      if (aiDiagnoses.error) {
+        container.innerHTML = `
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-500 text-xs flex items-center justify-between gap-3">
+            <span class="flex items-center gap-2"><i data-lucide="wifi-off" class="w-4 h-4 flex-shrink-0"></i><span>The AI opinion is off for this alert. The checks on the left still apply.</span></span>
+            <a href="/pages/ai_setup" class="font-semibold text-brand-600 no-underline whitespace-nowrap">Set up AI</a>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      let list = aiDiagnoses.diagnoses || [];
+
+      // Filter by Severity
+      if (activeFilter === 'HIGH_CRITICAL') {
+        list = list.filter(d => d.severity === 'Critical' || d.severity === 'High');
+      } else if (activeFilter === 'MEDIUM') {
+        list = list.filter(d => d.severity === 'Medium');
+      } else if (activeFilter === 'LOW') {
+        list = list.filter(d => d.severity === 'Low' || d.severity === 'Normal');
+      }
+
+      // Filter by Search Query
+      if (searchQuery) {
+        list = list.filter(d => {
+          return (d.issue || '').toLowerCase().includes(searchQuery) || 
+                 (d.root_cause || '').toLowerCase().includes(searchQuery);
+        });
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 bg-slate-50/50 border border-slate-200 border-dashed rounded-2xl text-slate-400 text-center flex flex-col items-center justify-center gap-2">
+            <i data-lucide="inbox" class="w-8 h-8 text-slate-300"></i>
+            <span class="text-sm font-medium">No AI diagnoses matching criteria.</span>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      list.forEach((diag, i) => {
+        const card  = getSeverityStyles(diag.severity);
+        const badge = getSeverityBadge(diag.severity);
+        const conf  = parseInt(diag.confidence_score) || 0;
+        const confC = conf >= 80 ? 'bg-emerald-500' : conf >= 50 ? 'bg-amber-500' : 'bg-slate-400';
+        const isCurrent = (diag.status || '').toLowerCase() === 'current';
+        const steps = parseSteps(diag.recommended_action || '');
+        const stepsHTML = steps.map((s, n) => `<li class="flex gap-2"><span class="font-bold flex-shrink-0 text-slate-400">${n+1}.</span><span>${s}</span></li>`).join('');
+        
+        container.insertAdjacentHTML('beforeend', `
+          <div class="finding-card rounded-2xl border ${card} overflow-hidden bg-white/80 backdrop-blur-md shadow-sm hover:shadow-md transition-all duration-300 fade-in" style="animation-delay:${i*0.05}s">
+            <div class="flex items-center justify-between gap-3 px-4 pt-4 pb-2">
+              <div>
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${badge}">${SEV_LABEL[diag.severity] || diag.severity}</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full border font-medium ${isCurrent ? 'bg-blue-100 text-blue-700 border-blue-200' : 'bg-purple-100 text-purple-700 border-purple-200'}">
+                    ${isCurrent ? 'Happening now' : 'Possible future issue'}
+                  </span>
+                </div>
+                <h4 class="font-bold text-sm leading-tight text-slate-800">${cleanIssueText(diag.issue)}</h4>
+                <div class="flex items-center gap-2 mt-2 w-48 sm:w-64">
+                  <span class="text-[10px] opacity-60 font-semibold">AI Confidence:</span>
+                  <div class="flex-1 h-1.5 rounded-full bg-white/80 shadow-inner overflow-hidden">
+                    <div class="h-full rounded-full ${confC}" style="width:${conf}%"></div>
+                  </div>
+                  <span class="text-[10px] font-bold text-slate-700">${conf}%</span>
+                </div>
+              </div>
+              <button onclick="toggleDetails('ai-${i}')" class="p-1.5 hover:bg-slate-100 rounded-lg transition-all text-slate-400 hover:text-slate-600 border-0 bg-transparent cursor-pointer flex items-center justify-center">
+                <i data-lucide="chevron-down" id="chevron-ai-${i}" class="w-5 h-5 transition-transform duration-200" style="transform: rotate(180deg)"></i>
+              </button>
+            </div>
+            
+            <div id="details-ai-${i}" class="mx-4 mb-3 mt-2 bg-white/90 rounded-xl p-4 border border-slate-100/50 space-y-4 text-xs shadow-inner">
+              <!-- 1. AC Condition -->
+              <div class="flex items-start gap-2.5">
+                <div class="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0 border border-blue-100">
+                  <i data-lucide="info" class="w-3.5 h-3.5 text-blue-500"></i>
+                </div>
+                <div>
+                  <h6 class="font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-0.5">1. AC Condition</h6>
+                  <p class="text-slate-600 font-medium leading-relaxed">
+                    Status: <span class="${getACConditionColorClass(getACConditionStatus(diag.severity, diag.issue, ''))}">${getACConditionStatus(diag.severity, diag.issue, '')}</span>
+                  </p>
+                  <p class="text-[11px] text-slate-500 mt-1 leading-relaxed">${diag.root_cause}</p>
+                </div>
+              </div>
+
+              <!-- 2. Fault / Anomaly Details -->
+              <div class="flex items-start gap-2.5 pt-3 border-t border-slate-100/50">
+                <div class="w-6 h-6 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0 border border-red-100">
+                  <i data-lucide="alert-octagon" class="w-3.5 h-3.5 text-red-500"></i>
+                </div>
+                <div>
+                  <h6 class="font-bold text-slate-800 text-[11px] uppercase tracking-wider mb-0.5">2. Fault / Anomaly Details</h6>
+                  <p class="text-slate-800 font-bold leading-tight">${cleanIssueText(diag.issue)}</p>
+                </div>
+              </div>
+
+              <!-- 3. Required Maintenance -->
+              <div class="flex items-start gap-2.5 pt-3 border-t border-slate-100/50">
+                <div class="w-6 h-6 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0 border border-emerald-100">
+                  <i data-lucide="wrench" class="w-3.5 h-3.5 text-emerald-600"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex justify-between items-center mb-1">
+                    <h6 class="font-bold text-slate-800 text-[11px] uppercase tracking-wider">3. Required Maintenance</h6>
+                    <button id="copy-btn-ai-${i}" onclick="copyToClipboard('${(diag.recommended_action || '').replace(/'/g, "\\'")}', 'copy-btn-ai-${i}')" class="flex items-center gap-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 transition-colors bg-transparent border-0 cursor-pointer">
+                      <i data-lucide="copy" class="w-3 h-3"></i>
+                      <span>Copy Actions</span>
+                    </button>
+                  </div>
+                  <ol class="space-y-1.5 text-slate-700 font-medium pl-0">${stepsHTML}</ol>
+                </div>
+              </div>
+            </div>
+          </div>`);
+      });
+
+      lucide.createIcons();
+    }
+
+    // ─── Render Table Only ─────────────────────────────────────────
+    function renderTableOnly() {
+      const ruleResult = rawDiagnosesData && rawDiagnosesData.rule_diagnoses;
+      const tbody = document.getElementById('steps-tbody');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '';
+      if (!ruleResult) {
+        tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-slate-500 font-mono">No steps available</td></tr>';
+        return;
+      }
+
+      let steps = ruleResult.computation_steps || [];
+
+      // Apply Table Filter
+      if (activeTableFilter === 'TRIGGERED') {
+        steps = steps.filter(step => step.result === 'TRIGGERED');
+      } else if (activeTableFilter === 'PASS') {
+        steps = steps.filter(step => step.result === 'PASS');
+      }
+
+      if (steps.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 font-mono">No matching steps found</td></tr>`;
+        return;
+      }
+
+      steps.forEach(step => {
+        const color = getRuleStepColor(step.result);
+        const expr  = step.expression || step.reason || '\u2014';
+        const lbl   = step.result === 'TRIGGERED' ? '\u2717 TRIGGERED' : step.result === 'PASS' ? '\u2713 PASS' : '\u2014 SKIP';
+        tbody.insertAdjacentHTML('beforeend', `
+          <tr class="${step.result === 'TRIGGERED' ? 'bg-red-950/20' : 'hover:bg-slate-800/40'} transition-colors">
+            <td class="py-2.5 pr-4 text-slate-300 font-medium">${step.sensor}</td>
+            <td class="py-2.5 pr-4 text-slate-300 font-bold">${step.value}</td>
+            <td class="py-2.5 pr-4 text-slate-500">${step.normal_range}</td>
+            <td class="py-2.5 pr-4 ${color} text-[11px]">${expr}</td>
+            <td class="py-2.5 font-bold ${color}">${lbl}</td>
+          </tr>`);
+      });
+    }
+
+    // ─── Toggle computation steps panel ──────────────────────────
+    function toggleComputationSteps() {
+      const panel = document.getElementById('computation-steps');
+      const chevron = document.getElementById('steps-chevron');
+      const btn = document.getElementById('toggle-steps');
+      const filterGroup = document.getElementById('table-filter-group');
+      const isHidden = panel.classList.contains('hidden');
+      
+      panel.classList.toggle('hidden', !isHidden);
+      if (filterGroup) filterGroup.classList.toggle('hidden', !isHidden);
+      chevron.style.transform = isHidden ? 'rotate(180deg)' : '';
+      btn.querySelector('span').textContent = isHidden ? 'Hide Algorithm Computation Steps' : 'Show Algorithm Computation Steps';
+    }
+
+
+    // ─── What to do now ────────────────────────────────────────────
+    function apEsc(x) {
+      return String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    const URGENCY_STYLE = {
+      stop_now: { box: 'bg-red-50 border-red-200', text: 'text-red-700', pill: 'bg-red-600', label: 'Stop and check now' },
+      today:    { box: 'bg-amber-50 border-amber-200', text: 'text-amber-700', pill: 'bg-amber-500', label: 'Check today' },
+      soon:     { box: 'bg-blue-50 border-blue-200', text: 'text-blue-700', pill: 'bg-blue-500', label: 'Plan maintenance' },
+      sensor:   { box: 'bg-violet-50 border-violet-200', text: 'text-violet-700', pill: 'bg-violet-500', label: 'Check the sensor' },
+      clean:    { box: 'bg-sky-50 border-sky-200', text: 'text-sky-700', pill: 'bg-sky-500', label: 'Routine cleaning' }
+    };
+
+    function renderActionPlan() {
+      const sec = document.getElementById('action-plan');
+      const plan = rawDiagnosesData && rawDiagnosesData.action_plan;
+      if (!plan || !plan.steps || !plan.steps.length) { sec.classList.add('hidden'); return; }
+      const top = URGENCY_STYLE[plan.urgency] || URGENCY_STYLE.today;
+      const li = (items) => (items || []).map(t => `<li>${apEsc(t)}</li>`).join('');
+      const first = (plan.first_steps || []).map(t => `<li class="leading-snug">${apEsc(t)}</li>`).join('');
+      const rows = plan.steps.map(s => {
+        const st = URGENCY_STYLE[s.urgency] || URGENCY_STYLE.today;
+        const reading = s.measured ? ` <span class="text-slate-500 font-medium">${apEsc(s.measured)}${s.normal ? ' (normal ' + apEsc(s.normal) + ')' : ''}</span>` : '';
+        const extra = ((s.check && s.check.length) || s.call_technician_if) ? `
+          <div class="mt-2 text-xs text-slate-600 space-y-1">
+            ${(s.check && s.check.length) ? `<p><b>Also check:</b> ${s.check.map(apEsc).join(' ')}</p>` : ''}
+            ${s.call_technician_if ? `<p><b>Call a technician if</b> ${apEsc(s.call_technician_if)}</p>` : ''}
+          </div>` : '';
+        return `
+        <details class="rounded-xl border ${st.box} px-3 py-2 mb-2">
+          <summary class="cursor-pointer select-none flex items-center gap-2 flex-wrap text-sm">
+            <span class="w-2 h-2 rounded-full ${st.pill}"></span><span class="font-bold text-slate-800">${apEsc(s.title)}</span>${reading}
+          </summary>
+          <div class="mt-2 text-sm text-slate-700"><ol class="list-decimal ml-5 space-y-0.5">${li(s.do_now)}</ol>${extra}</div>
+        </details>`;
+      }).join('');
+      const ai = (plan.ml_notes || []).length ? `<p class="mt-3 text-xs text-slate-500">The AI also noticed odd readings: ${plan.ml_notes.map(m => apEsc(m.sensor)).join(', ')}.</p>` : '';
+      sec.innerHTML = `
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
+          <div class="flex items-center gap-2.5 flex-wrap mb-2">
+            <h3 class="text-lg font-bold text-brand-900">What to do now</h3>
+            <span class="text-[11px] font-bold text-white px-2 py-0.5 rounded-md ${top.pill}">${apEsc(plan.headline || top.label)}</span>
+          </div>
+          <ol class="list-decimal ml-5 space-y-1 text-sm font-semibold ${top.text} mb-3">${first}</ol>
+          <p class="text-[11px] text-slate-400 mb-2">Tap a problem for the steps.</p>
+          ${rows}${ai}
+        </div>`;
+      sec.classList.remove('hidden');
+    }
+
+    // ─── Readings when the alert fired ─────────────────────────────
+    const DEFAULT_LIMITS_JS = {
+      power: { min: 1650, max: 1860 }, voltage: { min: 225, max: 241 }, current: { min: 7.6, max: 8.8 },
+      output_temp: { min: 7, max: 25 }, humidity: { min: 0, max: 80 }, outlet_temp: { min: 50, max: 61 },
+      inlet_temp: { min: 8, max: 17 }, vibration: { min: 10, max: 90 }
+    };
+    function readingMetrics() {
+      const L = (rawDiagnosesData && rawDiagnosesData.limits) || DEFAULT_LIMITS_JS;
+      const n = (x) => Math.round(x * 100) / 100;
+      const range = (k, u) => `${n(L[k].min)}-${n(L[k].max)} ${u}`;
+      return [
+        { key: 'pzem_power',    label: 'Power usage',            unit: 'W',  min: L.power.min,       max: L.power.max,       text: range('power', 'W') },
+        { key: 'pzem_voltage',  label: 'Supply voltage',         unit: 'V',  min: L.voltage.min,     max: L.voltage.max,     text: range('voltage', 'V') },
+        { key: 'pzem_current',  label: 'Operating current',      unit: 'A',  min: L.current.min,     max: L.current.max,     text: range('current', 'A') },
+        { key: 'dht_temp',      label: 'Output temperature',     unit: '°C', min: L.output_temp.min, max: L.output_temp.max, text: range('output_temp', '°C') },
+        { key: 'dht_humidity',  label: 'Output humidity',        unit: '%',  min: 0,                 max: L.humidity.max,    text: `${n(L.humidity.max)} % or less` },
+        { key: 'ds18b20_temp1', label: 'Outlet compressor temp', unit: '°C', min: L.outlet_temp.min, max: L.outlet_temp.max, text: range('outlet_temp', '°C') },
+        { key: 'ds18b20_temp2', label: 'Inlet compressor temp',  unit: '°C', min: L.inlet_temp.min,  max: L.inlet_temp.max,  text: range('inlet_temp', '°C') },
+        { key: 'vibration',     label: 'Compressor vibration',   unit: 'Hz', min: L.vibration.min,   max: L.vibration.max,   text: `under ${n(L.vibration.max)} Hz`, strictMax: true }
+      ];
+    }
+    const READING_STYLE = {
+      OK:   { border: 'border-emerald-200', bg: 'bg-white',    pill: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
+      HIGH: { border: 'border-red-300',     bg: 'bg-red-50',   pill: 'bg-red-100 text-red-700',         dot: 'bg-red-500' },
+      LOW:  { border: 'border-blue-300',    bg: 'bg-blue-50',  pill: 'bg-blue-100 text-blue-700',       dot: 'bg-blue-500' },
+      NONE: { border: 'border-slate-200',   bg: 'bg-slate-50', pill: 'bg-slate-100 text-slate-500',     dot: 'bg-slate-400' }
+    };
+
+    function getAlertReadings() {
+      if (rawDiagnosesData && rawDiagnosesData.readings) return rawDiagnosesData.readings;
+      // older alerts: rebuild the readings from the saved computation steps
+      const steps = (rawDiagnosesData && rawDiagnosesData.rule_diagnoses && rawDiagnosesData.rule_diagnoses.computation_steps) || [];
+      const map = {
+        'High Voltage Supply': 'pzem_voltage', 'High Current Draw': 'pzem_current', 'High Power Consumption': 'pzem_power',
+        'Excessive Vibration': 'vibration', 'High Inlet Temperature': 'ds18b20_temp2',
+        'High Outlet Compressor Temp': 'ds18b20_temp1', 'High Output Temp': 'dht_temp', 'Humidity': 'dht_humidity'
+      };
+      const out = {}; let found = 0;
+      steps.forEach(st => {
+        const k = map[st.sensor]; if (!k) return;
+        const m = String(st.value == null ? '' : st.value).match(/-?\d+(\.\d+)?/);
+        if (m) { out[k] = parseFloat(m[0]); found++; }
+      });
+      return found ? out : null;
+    }
+
+    function renderReadingsPanel() {
+      const box = document.getElementById('readings-panel');
+      const r = getAlertReadings();
+      if (!r) { box.classList.add('hidden'); return; }
+      const READING_METRICS = readingMetrics();
+      let outside = 0;
+      const tiles = READING_METRICS.map(m => {
+        const raw = r[m.key];
+        const v = (raw === null || raw === undefined || raw === '') ? NaN : Number(raw);
+        let status = 'NONE';
+        if (!Number.isNaN(v)) {
+          status = v < m.min ? 'LOW' : ((m.strictMax ? v >= m.max : v > m.max) ? 'HIGH' : 'OK');
+        }
+        if (status === 'HIGH' || status === 'LOW') outside++;
+        const st = READING_STYLE[status];
+        const span = (m.max - m.min) || 1, lo = m.min - span * 0.6, hi = m.max + span * 0.6;
+        const pos = (x) => Math.max(2, Math.min(98, ((x - lo) / (hi - lo)) * 100));
+        const zoneL = pos(m.min), zoneW = pos(m.max) - pos(m.min);
+        const marker = Number.isNaN(v) ? '' : `<span class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border-2 border-white ${st.dot}" style="left:${pos(v)}%"></span>`;
+        const shown = Number.isNaN(v) ? 'no reading' : (Math.round(v * 100) / 100);
+        return `
+          <div class="rounded-xl border ${st.border} ${st.bg} p-3">
+            <div class="flex items-center justify-between gap-2">
+              <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500">${apEsc(m.label)}</p>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${st.pill}">${status === 'NONE' ? 'OFFLINE' : status === 'OK' ? 'OK' : status}</span>
+            </div>
+            <p class="text-lg font-extrabold text-slate-800 mt-0.5">${shown} <span class="text-xs font-semibold text-slate-400">${Number.isNaN(v) ? '' : apEsc(m.unit)}</span></p>
+            <div class="relative h-1.5 rounded-full bg-slate-200 mt-2"><span class="absolute top-0 h-1.5 rounded-full bg-emerald-300/70" style="left:${zoneL}%;width:${zoneW}%"></span>${marker}</div>
+            <p class="text-[10px] text-slate-400 mt-1">Normal: ${apEsc(m.text)}</p>
+          </div>`;
+      }).join('');
+      box.innerHTML = `
+        <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200">
+          <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+            <h4 class="text-base font-bold text-slate-800">Readings when the alert fired</h4>
+            <span class="text-xs font-bold ${outside ? 'text-red-600' : 'text-emerald-600'}">${outside} of ${READING_METRICS.length} outside the normal range</span>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">${tiles}</div>
+        </div>`;
+      box.classList.remove('hidden');
+    }
+
+    async function loadAlert() {
+      const id = getQueryParam('id');
+
+      try {
+        if (!id) throw new Error('Missing ID');
+        
+        const res = await fetch(`/alerts/${id}`);
+        if (!res.ok) throw new Error('Alert not found');
+        
+        alertData = await res.json();
+      } catch (err) {
+        console.warn("API fetch failed, utilizing mock data for preview rendering.");
+        alertData = mockData;
+        if(id) alertData.id = id;
+      }
+
+      // Format timestamp
+      let tsStr = String(alertData.timestamp || '').trim();
+      if (tsStr.includes(' ') && !tsStr.includes('T')) {
+        tsStr = tsStr.replace(' ', 'T');
+      }
+      if (/([+-]\d{2})$/.test(tsStr)) {
+        tsStr = tsStr + ":00";
+      } else if (tsStr && !/([+-]\d{2}(:?\d{2})?|Z)$/i.test(tsStr)) {
+        tsStr = tsStr + "+08:00";
+      }
+
+      const dateObj = new Date(tsStr);
+      const formattedDate = isNaN(dateObj) ? alertData.timestamp : new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric', month: 'short', day: 'numeric', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }).format(dateObj);
+
+      document.getElementById('meta').innerText = `ID: ${alertData.id} • ${formattedDate}`;
+      document.getElementById('summary').innerText = cleanSummaryText(alertData.summary || 'No summary provided.');
+      
+      // Save parsed diagnoses data globally
+      try {
+        let parsed = typeof alertData.diagnoses === 'string' ? JSON.parse(alertData.diagnoses) : alertData.diagnoses;
+        if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+
+        if (parsed.rule_diagnoses !== undefined || parsed.ai_diagnoses !== undefined) {
+          rawDiagnosesData = parsed;
+        } else {
+          // Legacy format fallback
+          rawDiagnosesData = {
+            rule_diagnoses: null,
+            ai_diagnoses: parsed
+          };
+        }
+      } catch (err) {
+        console.error('Failed to parse diagnoses:', err);
+        rawDiagnosesData = null;
+      }
+
+      // Calculate counts and render everything
+      updateCounts();
+      renderAllActive();
+      updateOverallStatusUI();
+      renderActionPlan();
+      renderReadingsPanel();
+
+      // Handle custom modal delete confirmation
+      confirmBtn.onclick = async () => {
+        confirmBtn.innerHTML = '<svg class="animate-spin h-5 w-5 mr-2 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Deleting...';
+        confirmBtn.disabled = true;
+        
+        try {
+          await fetch(`/alerts/${alertData.id}`, { method: 'DELETE' });
+        } catch(e) {
+          console.log("Delete mocked.");
+        } finally {
+          window.location.href = '/pages/alerts';
+        }
+      };
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', loadAlert);
+  </script>
+  </div>
+</body>
+</html>

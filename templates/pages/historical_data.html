@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Historical Data Audit - AirBnBrrr</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Tailwind Configuration matching brand theme -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f3fafb',  // Ice Mint Tint background
+              100: '#C1E6EC', // Ice Mint
+              500: '#4b6b80', // Muted slate blue text
+              600: '#62B6DC', // Pastel Slate Blue
+              700: '#1E6AA6', // Deep Cold Blue primary
+              800: '#185585', // Medium Cold Blue hover
+              900: '#0b1d30', // Dark Navy text
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    body {
+      background-color: theme('colors.brand.50');
+      color: theme('colors.brand.900');
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Custom Scrollbar for the data table */
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f8fafc;
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Tab styles */
+    .tab-btn {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: theme('colors.brand.700');
+    }
+  </style>
+</head>
+
+<body class="min-h-screen selection:bg-brand-100 selection:text-brand-900 bg-brand-50">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <div class="max-w-[90rem] mx-auto p-4 sm:p-6 lg:p-8">
+
+      <!-- Header Section -->
+      <header class="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3 mb-1">
+            <div class="p-2 bg-brand-700 rounded-lg shadow-sm">
+              <i data-lucide="history" class="w-6 h-6 text-white"></i>
+            </div>
+            <h1 class="text-3xl font-bold tracking-tight text-brand-900">Historical Data Audit</h1>
+          </div>
+          <p class="text-brand-500 font-medium ml-1">Review daily spreadsheet history, perform rule audits, and view parameter trends.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="export-csv" class="flex items-center gap-2 text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 px-4 py-2.5 rounded-xl transition-all shadow-sm">
+            <i data-lucide="download" class="w-4 h-4 text-slate-500"></i>
+            Export CSV
+          </button>
+          <button id="refresh" class="flex items-center gap-2 text-sm font-semibold text-white bg-brand-700 hover:bg-brand-800 active:bg-brand-900 px-4 py-2.5 rounded-xl shadow-sm transition-all">
+            <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <!-- Stat 1: Total Days -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-4">
+          <div class="p-3 bg-brand-50 text-brand-700 rounded-xl">
+            <i data-lucide="calendar" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm font-medium mb-0.5">Total Days Logged</div>
+            <div class="text-2xl font-bold text-slate-800 tracking-tight" id="stat-total-days">—</div>
+          </div>
+        </div>
+
+        <!-- Stat 2: Active Days -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-4">
+          <div class="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+            <i data-lucide="play-circle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm font-medium mb-0.5">Compressor Active</div>
+            <div class="text-2xl font-bold text-slate-800 tracking-tight" id="stat-active-days">—</div>
+          </div>
+        </div>
+
+        <!-- Stat 3: OFF Days -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-4">
+          <div class="p-3 bg-slate-50 text-slate-500 rounded-xl">
+            <i data-lucide="stop-circle" class="w-6 h-6"></i>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm font-medium mb-0.5">Compressor OFF</div>
+            <div class="text-2xl font-bold text-slate-800 tracking-tight" id="stat-off-days">—</div>
+          </div>
+        </div>
+
+        <!-- Stat 4: Anomalies Found -->
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex items-center gap-4">
+          <div class="p-3 bg-rose-50 text-rose-600 rounded-xl" id="stat-anomalies-bg">
+            <i data-lucide="alert-triangle" class="w-6 h-6" id="stat-anomalies-icon"></i>
+          </div>
+          <div>
+            <div class="text-slate-500 text-sm font-medium mb-0.5">Anomalous Days</div>
+            <div class="text-2xl font-bold text-slate-800 tracking-tight" id="stat-anomalous-days">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Filtering Panel -->
+      <section class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-sm mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Month Selector -->
+          <div class="flex flex-col gap-1.5">
+            <label for="filter-month" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Month</label>
+            <select id="filter-month" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:border-slate-300 transition-colors cursor-pointer">
+              <option value="all">All Months</option>
+              <option value="2026-02">February 2026</option>
+              <option value="2026-03">March 2026</option>
+              <option value="2026-04">April 2026</option>
+              <option value="2026-06">June 2026</option>
+            </select>
+          </div>
+
+          <!-- Status Selector -->
+          <div class="flex flex-col gap-1.5">
+            <label for="filter-status" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</label>
+            <select id="filter-status" class="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 outline-none hover:border-slate-300 transition-colors cursor-pointer">
+              <option value="all">All Records</option>
+              <option value="active">Active Compressor</option>
+              <option value="off">OFF Compressor</option>
+              <option value="anomalous">Anomalies Detected</option>
+              <option value="clean">Clean (No Alerts)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Search input -->
+        <div class="flex flex-col gap-1.5 w-full md:w-64">
+          <label for="search-input" class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Search Date</label>
+          <div class="relative">
+            <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+            <input type="text" id="search-input" placeholder="YYYY-MM-DD..." class="bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-sm text-slate-700 outline-none hover:border-slate-300 focus:border-brand-600 focus:ring-1 focus:ring-brand-600 transition-all w-full" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Main Content Tabs -->
+      <section class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+        <!-- Tabs Header -->
+        <div class="border-b border-slate-100 bg-slate-50/50 flex px-6">
+          <button class="tab-btn px-4 py-4 text-sm font-bold text-slate-600 hover:text-slate-900 border-b-2 border-transparent active" data-tab="tab-table">
+            <span class="flex items-center gap-2">
+              <i data-lucide="table" class="w-4 h-4"></i>
+              Data Table
+            </span>
+          </button>
+          <button class="tab-btn px-4 py-4 text-sm font-bold text-slate-600 hover:text-slate-900 border-b-2 border-transparent" data-tab="tab-audit">
+            <span class="flex items-center gap-2">
+              <i data-lucide="shield-alert" class="w-4 h-4"></i>
+              Audit Alerts Log
+              <span id="audit-badge-count" class="hidden text-xs bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded-full">0</span>
+            </span>
+          </button>
+          <button class="tab-btn px-4 py-4 text-sm font-bold text-slate-600 hover:text-slate-900 border-b-2 border-transparent" data-tab="tab-chart">
+            <span class="flex items-center gap-2">
+              <i data-lucide="line-chart" class="w-4 h-4"></i>
+              Trends Chart
+            </span>
+          </button>
+        </div>
+
+        <!-- Tab 1: Data Table Content -->
+        <div id="tab-table" class="tab-content flex-1 p-6 flex flex-col justify-between">
+          <div class="overflow-x-auto custom-scrollbar border border-slate-100 rounded-xl mb-4">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-xs whitespace-nowrap">
+                  <th class="px-4 py-3.5">Date</th>
+                  <th class="px-4 py-3.5">Suction Pres (MPa)</th>
+                  <th class="px-4 py-3.5">Disch Pres (MPa)</th>
+                  <th class="px-4 py-3.5">Water Inlet (°C)</th>
+                  <th class="px-4 py-3.5">Water Outlet (°C)</th>
+                  <th class="px-4 py-3.5">Water Inlet Pres (MPa)</th>
+                  <th class="px-4 py-3.5">Water Outlet Pres (MPa)</th>
+                  <th class="px-4 py-3.5">Fan Current (A)</th>
+                  <th class="px-4 py-3.5">Comp Current (A)</th>
+                  <th class="px-4 py-3.5">AC Inlet (In °C)</th>
+                  <th class="px-4 py-3.5">AC Inlet (Out °C)</th>
+                  <th class="px-4 py-3.5">AC Outlet (°C)</th>
+                  <th class="px-4 py-3.5 text-center">Audit Status</th>
+                </tr>
+              </thead>
+              <tbody id="table-tbody" class="divide-y divide-slate-100 whitespace-nowrap text-slate-700">
+                <!-- Injected Rows -->
+              </tbody>
+            </table>
+            <div id="table-empty" class="hidden py-16 text-center">
+              <i data-lucide="database" class="w-12 h-12 text-slate-300 mx-auto mb-3"></i>
+              <h3 class="text-base font-semibold text-slate-700">No records found</h3>
+              <p class="text-sm text-slate-500 mt-1">Try adjusting your filters or search query.</p>
+            </div>
+          </div>
+
+          <!-- Pagination Panel -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 pt-4">
+            <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
+              <span>Show</span>
+              <select id="page-size" class="bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 outline-none text-slate-700 cursor-pointer">
+                <option value="10">10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="all">All</option>
+              </select>
+              <span>entries</span>
+            </div>
+
+            <div class="text-sm font-medium text-slate-500" id="pagination-info">
+              Showing 0 to 0 of 0 entries
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button id="page-prev" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors">
+                Previous
+              </button>
+              <button id="page-next" class="px-3 py-1.5 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 bg-white hover:bg-slate-50 active:bg-slate-100 disabled:opacity-50 disabled:pointer-events-none transition-colors">
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Audit Log Content -->
+        <div id="tab-audit" class="tab-content flex-1 p-6 hidden">
+          <div id="audit-list" class="space-y-4 max-w-4xl">
+            <!-- Warnings cards generated by JS -->
+          </div>
+          <div id="audit-empty" class="hidden py-16 text-center">
+            <div class="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-4 text-emerald-600">
+              <i data-lucide="check-circle" class="w-8 h-8"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800">No Anomalies Found</h3>
+            <p class="text-sm text-slate-500 mt-2 max-w-md mx-auto">The filtered historical log is clean. All physical operational conditions meet safety parameters!</p>
+          </div>
+        </div>
+
+        <!-- Tab 3: Trends Chart Content -->
+        <div id="tab-chart" class="tab-content flex-1 p-6 hidden flex flex-col gap-6">
+          <!-- Chart Group Toggles -->
+          <div class="flex flex-wrap gap-2">
+            <button class="chart-group-btn px-4 py-2 rounded-xl text-sm font-bold bg-brand-50 hover:bg-brand-100 text-brand-700 transition-all active border-0" data-group="pressures">
+              Compressor Pressures
+            </button>
+            <button class="chart-group-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all border-0" data-group="water">
+              Water Circuit (Temps & Pressures)
+            </button>
+            <button class="chart-group-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all border-0" data-group="currents">
+              Electrical Currents
+            </button>
+            <button class="chart-group-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-50 hover:bg-slate-100 text-slate-600 transition-all border-0" data-group="ac">
+              AC Air Temperatures
+            </button>
+          </div>
+
+          <!-- Canvas container -->
+          <div class="relative min-h-[400px] border border-slate-100 rounded-xl p-4 bg-slate-50/20">
+            <canvas id="trendsChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <script>
+    // Config values
+    let records = [];
+    let filteredRecords = [];
+    let currentPage = 1;
+    let pageSize = 10;
+    let activeTab = 'tab-table';
+    let currentChartGroup = 'pressures';
+    let chartInstance = null;
+
+    // Rules checker
+    function auditRecord(r) {
+      const anomalies = [];
+      const date = r.date;
+      
+      const suc_str = r.compressor_suction_pressure;
+      const dis_str = r.compressor_discharge_pressure;
+      const is_off = (suc_str === 'OFF' || dis_str === 'OFF');
+
+      const to_float = (v) => {
+        if (v === null || v === undefined) return null;
+        const num = parseFloat(v);
+        return isNaN(num) ? null : num;
+      };
+
+      const suc_p = to_float(suc_str);
+      const dis_p = to_float(dis_str);
+      const water_in_t = to_float(r.water_inlet_temp_c);
+      const water_in_p = to_float(r.water_inlet_pressure_mpa);
+      const water_out_t = to_float(r.water_outlet_temp_c);
+      const water_out_p = to_float(r.water_outlet_pressure_mpa);
+      const fan_amp = to_float(r.fan_amperes);
+      const comp_amp = to_float(r.compressor_amperes);
+      const ac_in_in = to_float(r.ac_inlet_temp_in);
+      const ac_in_out = to_float(r.ac_inlet_temp_out);
+      const ac_out = to_float(r.ac_outlet_temp);
+
+      // Rule 1: High discharge pressure
+      if (dis_p !== null && dis_p > 2.2) {
+        anomalies.push({
+          type: 'High Discharge Pressure',
+          message: `Discharge pressure ${dis_p} MPa exceeds safe operating limit (2.2 MPa). Risk of compressor damage.`,
+          severity: 'Critical'
+        });
+      }
+
+      // Rule 2: Low pressure difference when compressor is active
+      if (suc_p !== null && dis_p !== null) {
+        const press_diff = dis_p - suc_p;
+        if (press_diff < 0.3 && !is_off && comp_amp !== null && comp_amp > 5) {
+          anomalies.push({
+            type: 'Low Pressure Differential',
+            message: `Pressure difference (Discharge - Suction) is only ${press_diff.toFixed(2)} MPa (Suction=${suc_p} MPa, Discharge=${dis_p} MPa) while active. Indicates low compressor efficiency or pump failure.`,
+            severity: 'High'
+          });
+        }
+      }
+
+      // Rule 3: Zero water temperature difference while compressor draws current
+      if (water_in_t !== null && water_out_t !== null && !is_off && comp_amp !== null && comp_amp > 10) {
+        const temp_diff = Math.abs(water_out_t - water_in_t);
+        if (temp_diff < 0.2) {
+          anomalies.push({
+            type: 'Zero Heat Exchange',
+            message: `Water Inlet/Outlet temp difference is too low (${temp_diff.toFixed(1)}°C) while compressor is active (Current=${comp_amp}A, Inlet=${water_in_t}°C, Outlet=${water_out_t}°C). Indicates water flow blockage or refrigerant cycle failure.`,
+            severity: 'Critical'
+          });
+        }
+      }
+
+      // Rule 4: Overcurrent / Electrical overloading
+      if (comp_amp !== null && comp_amp > 45) {
+        anomalies.push({
+          type: 'Overloaded Compressor Current',
+          message: `Compressor current draw is ${comp_amp}A, which exceeds safe operating current (>45A). Risk of winding burn out.`,
+          severity: 'Critical'
+        });
+      }
+
+      // Rule 5: Zero cooling (AC outlet temp >= AC inlet temp IN when compressor is running)
+      if (ac_in_in !== null && ac_out !== null && !is_off && comp_amp !== null && comp_amp > 10) {
+        const cooling_diff = ac_in_in - ac_out;
+        if (cooling_diff <= 0) {
+          anomalies.push({
+            type: 'No Cooling Output',
+            message: `AC Outlet Temp (${ac_out}°C) is higher than/equal to Inlet Room Temp (${ac_in_in}°C) while compressor is running. The system is not cooling.`,
+            severity: 'High'
+          });
+        }
+      }
+
+      return anomalies;
+    }
+
+    // Helper formatting
+    function formatValue(v, isPressure = false, isAmpere = false) {
+      if (v === null || v === undefined) return '—';
+      if (v === 'OFF') return '<span class="px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500 border border-slate-200">OFF</span>';
+      
+      const num = parseFloat(v);
+      if (isNaN(num)) return String(v);
+
+      let classes = '';
+      if (isPressure && num > 2.2) classes = 'text-rose-600 font-bold';
+      if (isAmpere && num > 45) classes = 'text-rose-600 font-bold';
+
+      return `<span class="${classes}">${num.toFixed(2)}</span>`;
+    }
+
+    // Generate fallback data if backend is empty
+    function generateMockHistoricalData() {
+      console.log("Generating fallback simulated historical data.");
+      const list = [];
+      const months = [
+        { key: '2026-02', days: 28 },
+        { key: '2026-03', days: 31 },
+        { key: '2026-04', days: 30 },
+        { key: '2026-06', days: 30 }
+      ];
+
+      months.forEach(m => {
+        for (let d = 1; d <= m.days; d++) {
+          const dayStr = d < 10 ? '0' + d : d;
+          const date = `${m.key}-${dayStr}`;
+
+          // Make some days OFF
+          const is_off = (d % 10 === 0);
+          
+          let suc_pres = 'OFF';
+          let dis_pres = 'OFF';
+          let comp_current = 0.0;
+          let fan_current = 0.0;
+          let water_in_t = 24.5 + Math.random() * 2;
+          let water_out_t = 24.5 + Math.random() * 2;
+          let ac_in_in = 25.0 + Math.random() * 2;
+          let ac_in_out = 22.0 + Math.random() * 2;
+          let ac_out = 23.0 + Math.random() * 2;
+
+          if (!is_off) {
+            suc_pres = (0.45 + Math.random() * 0.1).toFixed(2);
+            dis_pres = (1.5 + Math.random() * 0.4).toFixed(2);
+            comp_current = 22.0 + Math.random() * 8;
+            fan_current = 2.5 + Math.random() * 0.5;
+            
+            // Generate temperature drops when active
+            water_out_t = water_in_t + (3.0 + Math.random() * 2.0); // heating water cycle
+            ac_out = ac_in_in - (6.0 + Math.random() * 3.0); // cooling room
+          }
+
+          // Inject intentional anomalies to replicate health script
+          // Anomaly 1: High Discharge Pressure on Feb 12
+          if (date === '2026-02-12') {
+            dis_pres = '2.45';
+            comp_current = 35.0;
+          }
+          // Anomaly 2: Low differential on March 15
+          if (date === '2026-03-15') {
+            suc_pres = '0.70';
+            dis_pres = '0.90';
+            comp_current = 15.0;
+          }
+          // Anomaly 3: Overcurrent on April 20
+          if (date === '2026-04-20') {
+            dis_pres = '2.10';
+            comp_current = 48.5;
+          }
+          // Anomaly 4: Zero heat exchange on June 10
+          if (date === '2026-06-10') {
+            water_in_t = 25.1;
+            water_out_t = 25.15;
+            comp_current = 18.0;
+          }
+          // Anomaly 5: Zero cooling output on June 22
+          if (date === '2026-06-22') {
+            ac_in_in = 26.2;
+            ac_out = 26.5;
+            comp_current = 20.0;
+          }
+
+          list.push({
+            date: date,
+            compressor_suction_pressure: String(suc_pres),
+            compressor_discharge_pressure: String(dis_pres),
+            water_inlet_temp_c: Number(water_in_t.toFixed(2)),
+            water_inlet_pressure_mpa: Number((0.35 + Math.random() * 0.05).toFixed(2)),
+            water_outlet_temp_c: Number(water_out_t.toFixed(2)),
+            water_outlet_pressure_mpa: Number((0.32 + Math.random() * 0.05).toFixed(2)),
+            fan_amperes: Number(fan_current.toFixed(2)),
+            compressor_amperes: Number(comp_current.toFixed(2)),
+            ac_inlet_temp_in: Number(ac_in_in.toFixed(2)),
+            ac_inlet_temp_out: Number(ac_in_out.toFixed(2)),
+            ac_outlet_temp: Number(ac_out.toFixed(2))
+          });
+        }
+      });
+      return list;
+    }
+
+    // Main Fetch
+    async function fetchData() {
+      const icon = document.getElementById('refresh-icon');
+      if (icon) icon.classList.add('animate-spin');
+
+      try {
+        const res = await fetch('/api/historical_data');
+        if (!res.ok) throw new Error('API return failed');
+        const data = await res.json();
+        if (data && data.length > 0) {
+          records = data;
+        } else {
+          records = generateMockHistoricalData();
+        }
+      } catch (err) {
+        records = generateMockHistoricalData();
+      } finally {
+        if (icon) {
+          setTimeout(() => icon.classList.remove('animate-spin'), 500);
+        }
+      }
+
+      // Group and limit to at most 5 records per unique date to prevent clutter
+      const groups = {};
+      for (const r of records) {
+        const dKey = r.date;
+        if (!groups[dKey]) {
+          groups[dKey] = [];
+        }
+        groups[dKey].push(r);
+      }
+      const limited = [];
+      const sortedKeys = Object.keys(groups).sort();
+      for (const dKey of sortedKeys) {
+        const dayPts = groups[dKey];
+        if (dayPts.length <= 5) {
+          limited.push(...dayPts);
+        } else {
+          // Select exactly 5 evenly-spaced records for this date
+          for (let i = 0; i < 5; i++) {
+            const idx = Math.round(i * (dayPts.length - 1) / 4);
+            limited.push(dayPts[idx]);
+          }
+        }
+      }
+      records = limited;
+
+      // Pre-compute audit validation results
+      records.forEach(r => {
+        r.anomalies = auditRecord(r);
+      });
+
+      applyFilters();
+    }
+
+    // Apply filters & search logic
+    function applyFilters() {
+      const monthFilter = document.getElementById('filter-month').value;
+      const statusFilter = document.getElementById('filter-status').value;
+      const searchQuery = document.getElementById('search-input').value.trim().toLowerCase();
+
+      filteredRecords = records.filter(r => {
+        // Month filter
+        if (monthFilter !== 'all' && !r.date.startsWith(monthFilter)) return false;
+
+        // Status filter
+        const is_off = (r.compressor_suction_pressure === 'OFF' || r.compressor_discharge_pressure === 'OFF');
+        const has_anoms = r.anomalies.length > 0;
+        if (statusFilter === 'active' && is_off) return false;
+        if (statusFilter === 'off' && !is_off) return false;
+        if (statusFilter === 'anomalous' && !has_anoms) return false;
+        if (statusFilter === 'clean' && has_anoms) return false;
+
+        // Search query
+        if (searchQuery && !r.date.toLowerCase().includes(searchQuery)) return false;
+
+        return true;
+      });
+
+      currentPage = 1;
+      updateStats();
+      renderActiveTab();
+    }
+
+    // Update Stats panels
+    function updateStats() {
+      let activeCount = 0;
+      let offCount = 0;
+      let anomalyCount = 0;
+
+      filteredRecords.forEach(r => {
+        const is_off = (r.compressor_suction_pressure === 'OFF' || r.compressor_discharge_pressure === 'OFF');
+        if (is_off) offCount++;
+        else activeCount++;
+
+        if (r.anomalies.length > 0) anomalyCount++;
+      });
+
+      document.getElementById('stat-total-days').textContent = filteredRecords.length;
+      document.getElementById('stat-active-days').textContent = activeCount;
+      document.getElementById('stat-off-days').textContent = offCount;
+      
+      const anomalousEl = document.getElementById('stat-anomalous-days');
+      anomalousEl.textContent = anomalyCount;
+      
+      const badgeCountEl = document.getElementById('audit-badge-count');
+      if (anomalyCount > 0) {
+        badgeCountEl.textContent = anomalyCount;
+        badgeCountEl.classList.remove('hidden');
+        
+        // Highlight anomalies card
+        document.getElementById('stat-anomalies-bg').className = "p-3 bg-rose-50 text-rose-600 rounded-xl";
+        anomalousEl.className = "text-2xl font-bold text-rose-600 tracking-tight";
+      } else {
+        badgeCountEl.classList.add('hidden');
+        document.getElementById('stat-anomalies-bg').className = "p-3 bg-slate-50 text-slate-500 rounded-xl";
+        anomalousEl.className = "text-2xl font-bold text-slate-800 tracking-tight";
+      }
+    }
+
+    // Render logic per tab
+    function renderActiveTab() {
+      if (activeTab === 'tab-table') {
+        renderTable();
+      } else if (activeTab === 'tab-audit') {
+        renderAuditLog();
+      } else if (activeTab === 'tab-chart') {
+        renderChart();
+      }
+    }
+
+    // Tab 1: Render Data Table
+    function renderTable() {
+      const tbody = document.getElementById('table-tbody');
+      const emptyEl = document.getElementById('table-empty');
+      tbody.innerHTML = '';
+
+      if (filteredRecords.length === 0) {
+        emptyEl.classList.remove('hidden');
+        document.getElementById('pagination-info').textContent = 'Showing 0 to 0 of 0 entries';
+        document.getElementById('page-prev').disabled = true;
+        document.getElementById('page-next').disabled = true;
+        return;
+      }
+      emptyEl.classList.add('hidden');
+
+      // Pagination slice
+      let pageRecords = [];
+      if (pageSize === 'all') {
+        pageRecords = filteredRecords;
+        currentPage = 1;
+      } else {
+        const size = parseInt(pageSize);
+        const maxPages = Math.ceil(filteredRecords.length / size);
+        if (currentPage > maxPages) currentPage = maxPages || 1;
+        
+        const startIdx = (currentPage - 1) * size;
+        const endIdx = startIdx + size;
+        pageRecords = filteredRecords.slice(startIdx, endIdx);
+
+        // Update pagination buttons
+        document.getElementById('page-prev').disabled = (currentPage === 1);
+        document.getElementById('page-next').disabled = (currentPage === maxPages);
+      }
+
+      // Display pagination label
+      const sizeVal = pageSize === 'all' ? filteredRecords.length : parseInt(pageSize);
+      const startEntry = filteredRecords.length === 0 ? 0 : (currentPage - 1) * sizeVal + 1;
+      const endEntry = Math.min(currentPage * sizeVal, filteredRecords.length);
+      document.getElementById('pagination-info').textContent = `Showing ${startEntry} to ${endEntry} of ${filteredRecords.length} entries`;
+
+      pageRecords.forEach(r => {
+        const hasAnoms = r.anomalies && r.anomalies.length > 0;
+        let statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">Normal</span>`;
+        
+        if (hasAnoms) {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-100 cursor-help" title="${r.anomalies.map(a => a.type).join(', ')}">${r.anomalies.length} Issue${r.anomalies.length > 1 ? 's' : ''}</span>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/60 transition-colors duration-150';
+        tr.innerHTML = `
+          <td class="px-4 py-3.5 font-semibold text-slate-900">${r.date}</td>
+          <td class="px-4 py-3.5">${formatValue(r.compressor_suction_pressure, true)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.compressor_discharge_pressure, true)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.water_inlet_temp_c)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.water_outlet_temp_c)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.water_inlet_pressure_mpa)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.water_outlet_pressure_mpa)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.fan_amperes)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.compressor_amperes, false, true)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.ac_inlet_temp_in)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.ac_inlet_temp_out)}</td>
+          <td class="px-4 py-3.5">${formatValue(r.ac_outlet_temp)}</td>
+          <td class="px-4 py-3.5 text-center">${statusBadge}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Tab 2: Render Audit Log warnings list
+    function renderAuditLog() {
+      const listEl = document.getElementById('audit-list');
+      const emptyEl = document.getElementById('audit-empty');
+      listEl.innerHTML = '';
+
+      let totalAnomaliesCount = 0;
+
+      filteredRecords.forEach(r => {
+        if (!r.anomalies || r.anomalies.length === 0) return;
+
+        totalAnomaliesCount += r.anomalies.length;
+        
+        r.anomalies.forEach(anom => {
+          let severityBadge = '';
+          if (anom.severity === 'Critical') {
+            severityBadge = '<span class="px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-red-100 text-red-800 border border-red-200">Critical</span>';
+          } else if (anom.severity === 'High') {
+            severityBadge = '<span class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200">High</span>';
+          } else {
+            severityBadge = '<span class="px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">Medium</span>';
+          }
+
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow transition-shadow flex items-start gap-4';
+          card.innerHTML = `
+            <div class="p-2.5 bg-rose-50 text-rose-600 rounded-lg flex-shrink-0 mt-0.5">
+              <i data-lucide="alert-octagon" class="w-5 h-5"></i>
+            </div>
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-1">
+                <span class="text-sm font-bold text-slate-800 font-mono">${r.date}</span>
+                ${severityBadge}
+                <span class="text-sm font-bold text-slate-900">${anom.type}</span>
+              </div>
+              <p class="text-slate-600 text-sm leading-relaxed">${anom.message}</p>
+            </div>
+          `;
+          listEl.appendChild(card);
+        });
+      });
+
+      if (totalAnomaliesCount === 0) {
+        emptyEl.classList.remove('hidden');
+        listEl.classList.add('hidden');
+      } else {
+        emptyEl.classList.add('hidden');
+        listEl.classList.remove('hidden');
+        lucide.createIcons(); // Instantiates icons inside warning log cards
+      }
+    }
+
+    // Tab 3: Chart.js visualization
+    function renderChart() {
+      const ctx = document.getElementById('trendsChart').getContext('2d');
+      
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      // Prepare dates x-axis labels
+      const labels = filteredRecords.map(r => r.date);
+      let datasets = [];
+
+      // Safe parsers for chart data
+      const parseVal = (v) => {
+        if (v === null || v === undefined || v === 'OFF') return null;
+        const val = parseFloat(v);
+        return isNaN(val) ? null : val;
+      };
+
+      if (currentChartGroup === 'pressures') {
+        datasets = [
+          {
+            label: 'Suction Pressure (MPa)',
+            data: filteredRecords.map(r => parseVal(r.compressor_suction_pressure)),
+            borderColor: '#62B6DC', // pastel slate blue
+            backgroundColor: 'rgba(98, 182, 220, 0.1)',
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'Discharge Pressure (MPa)',
+            data: filteredRecords.map(r => parseVal(r.compressor_discharge_pressure)),
+            borderColor: '#1E6AA6', // primary cold blue
+            backgroundColor: 'rgba(30, 106, 166, 0.1)',
+            tension: 0.15,
+            spanGaps: true
+          }
+        ];
+      } else if (currentChartGroup === 'water') {
+        datasets = [
+          {
+            label: 'Inlet Temperature (°C)',
+            data: filteredRecords.map(r => parseVal(r.water_inlet_temp_c)),
+            borderColor: '#f59e0b', // amber
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'Outlet Temperature (°C)',
+            data: filteredRecords.map(r => parseVal(r.water_outlet_temp_c)),
+            borderColor: '#ef4444', // red
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'Inlet Pressure (MPa)',
+            data: filteredRecords.map(r => parseVal(r.water_inlet_pressure_mpa)),
+            borderColor: '#10b981', // green
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            yAxisID: 'y1',
+            spanGaps: true
+          },
+          {
+            label: 'Outlet Pressure (MPa)',
+            data: filteredRecords.map(r => parseVal(r.water_outlet_pressure_mpa)),
+            borderColor: '#06b6d4', // cyan
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            yAxisID: 'y1',
+            spanGaps: true
+          }
+        ];
+      } else if (currentChartGroup === 'currents') {
+        datasets = [
+          {
+            label: 'Compressor Amperes (A)',
+            data: filteredRecords.map(r => parseVal(r.compressor_amperes)),
+            borderColor: '#8b5cf6', // purple
+            backgroundColor: 'rgba(139, 92, 246, 0.05)',
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'Fan Amperes (A)',
+            data: filteredRecords.map(r => parseVal(r.fan_amperes)),
+            borderColor: '#ec4899', // pink
+            backgroundColor: 'rgba(236, 72, 153, 0.05)',
+            tension: 0.15,
+            spanGaps: true
+          }
+        ];
+      } else if (currentChartGroup === 'ac') {
+        datasets = [
+          {
+            label: 'AC Room Temperature IN (°C)',
+            data: filteredRecords.map(r => parseVal(r.ac_inlet_temp_in)),
+            borderColor: '#f59e0b',
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'AC Room Temperature OUT (°C)',
+            data: filteredRecords.map(r => parseVal(r.ac_inlet_temp_out)),
+            borderColor: '#84cc16', // lime
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            spanGaps: true
+          },
+          {
+            label: 'AC Outlet Temperature (°C)',
+            data: filteredRecords.map(r => parseVal(r.ac_outlet_temp)),
+            borderColor: '#1E6AA6',
+            backgroundColor: 'transparent',
+            tension: 0.15,
+            spanGaps: true
+          }
+        ];
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                font: { family: 'Inter', weight: 500, size: 12 }
+              }
+            },
+            tooltip: {
+              padding: 10,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Inter' } }
+            },
+            y: {
+              position: 'left',
+              title: {
+                display: true,
+                text: currentChartGroup === 'pressures' ? 'Pressure (MPa)' : (currentChartGroup === 'currents' ? 'Current (Amperes)' : 'Temperature (°C)'),
+                font: { family: 'Inter', weight: 600 }
+              },
+              ticks: { font: { family: 'Inter' } }
+            },
+            ...(currentChartGroup === 'water' ? {
+              y1: {
+                position: 'right',
+                title: {
+                  display: true,
+                  text: 'Pressure (MPa)',
+                  font: { family: 'Inter', weight: 600 }
+                },
+                grid: { drawOnChartArea: false },
+                ticks: { font: { family: 'Inter' } }
+              }
+            } : {})
+          }
+        }
+      });
+    }
+
+    // CSV Exporter
+    function exportToCSV() {
+      if (filteredRecords.length === 0) {
+        alert('No data to export.');
+        return;
+      }
+
+      const headers = [
+        'Date',
+        'Compressor Suction Pressure (MPa)',
+        'Compressor Discharge Pressure (MPa)',
+        'Water Inlet Temp (C)',
+        'Water Inlet Pressure (MPa)',
+        'Water Outlet Temp (C)',
+        'Water Outlet Pressure (MPa)',
+        'Fan Amperes (A)',
+        'Compressor Amperes (A)',
+        'AC Inlet Temp Room IN (C)',
+        'AC Inlet Temp Room OUT (C)',
+        'AC Outlet Temp (C)'
+      ];
+
+      const csvRows = [headers.join(',')];
+
+      filteredRecords.forEach(r => {
+        const row = [
+          r.date,
+          r.compressor_suction_pressure,
+          r.compressor_discharge_pressure,
+          r.water_inlet_temp_c ?? '',
+          r.water_inlet_pressure_mpa ?? '',
+          r.water_outlet_temp_c ?? '',
+          r.water_outlet_pressure_mpa ?? '',
+          r.fan_amperes ?? '',
+          r.compressor_amperes ?? '',
+          r.ac_inlet_temp_in ?? '',
+          r.ac_inlet_temp_out ?? '',
+          r.ac_outlet_temp ?? ''
+        ];
+        // Clean values just in case
+        const cleanRow = row.map(v => {
+          let s = String(v).replace(/"/g, '""');
+          if (s.includes(',') || s.includes('\n')) s = `"${s}"`;
+          return s;
+        });
+        csvRows.push(cleanRow.join(','));
+      });
+
+      const csvString = csvRows.join('\n');
+      const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `historical_data_export_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    // Set up tabs switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active', 'border-brand-700', 'text-brand-700');
+          b.classList.add('text-slate-600', 'border-transparent');
+        });
+        
+        btn.classList.add('active', 'border-brand-700', 'text-brand-700');
+        btn.classList.remove('text-slate-600', 'border-transparent');
+        
+        const targetTab = btn.getAttribute('data-tab');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(targetTab).classList.remove('hidden');
+        
+        activeTab = targetTab;
+        renderActiveTab();
+      });
+    });
+
+    // Set up chart group switching
+    document.querySelectorAll('.chart-group-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.chart-group-btn').forEach(b => {
+          b.classList.remove('bg-brand-50', 'text-brand-700', 'active');
+          b.classList.add('bg-slate-50', 'text-slate-600');
+        });
+
+        btn.classList.add('bg-brand-50', 'text-brand-700', 'active');
+        btn.classList.remove('bg-slate-50', 'text-slate-600');
+
+        currentChartGroup = btn.getAttribute('data-group');
+        renderChart();
+      });
+    });
+
+    // Pagination Actions
+    document.getElementById('page-size').addEventListener('change', (e) => {
+      pageSize = e.target.value;
+      currentPage = 1;
+      renderTable();
+    });
+
+    document.getElementById('page-prev').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+
+    document.getElementById('page-next').addEventListener('click', () => {
+      const sizeVal = pageSize === 'all' ? filteredRecords.length : parseInt(pageSize);
+      const maxPages = Math.ceil(filteredRecords.length / sizeVal);
+      if (currentPage < maxPages) {
+        currentPage++;
+        renderTable();
+      }
+    });
+
+    // Filtering inputs listeners
+    document.getElementById('filter-month').addEventListener('change', applyFilters);
+    document.getElementById('filter-status').addEventListener('change', applyFilters);
+    document.getElementById('search-input').addEventListener('input', applyFilters);
+    document.getElementById('refresh').addEventListener('click', fetchData);
+    document.getElementById('export-csv').addEventListener('click', exportToCSV);
+
+    // Initial run
+    fetchData();
+  </script>
+</body>
+
+</html>

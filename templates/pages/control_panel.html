@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Control Panel</title>
+  
+  <!-- Google Fonts for better typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS for styling and responsiveness -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Tailwind Configuration to match your green theme -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f3fafb',
+              100: '#C1E6EC',
+              500: '#62B6DC',
+              600: '#1E6AA6', // Primary Deep Cold Blue
+              700: '#185585',
+              800: '#4b6b80', // Muted Text
+              900: '#0b1d30', // Dark Text
+            }
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-brand-50 text-brand-900 min-h-screen font-sans selection:bg-brand-600 selection:text-white">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <!-- Main Container -->
+    <div class="max-w-6xl mx-auto px-4 py-6 md:py-10 sm:px-6 lg:px-8">
+    
+    <!-- Header Section -->
+    <header class="mb-12 text-center sm:text-left flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight flex items-center justify-center sm:justify-start gap-3 mb-2">
+          <i data-lucide="sliders-horizontal" class="w-8 h-8 text-brand-600"></i>
+          Control Panel
+        </h1>
+        <p class="text-brand-800 text-sm md:text-base font-medium">Quick access to manage and monitor your application pages.</p>
+      </div>
+    </header>
+
+    <!-- Responsive Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+      
+      <!-- Card 1: Dashboard -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Dashboard</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Overview of latest telemetry and system status.</p>
+        <a href="/pages/dashboard" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Open Dashboard
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 2: Real-time Graphs -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="activity" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Real-time Graphs</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Live charts and metrics of recent data rows.</p>
+        <a href="/pages/real_time_graphs" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          View Live Data
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 3: Detailed Graph -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Data Analysis</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Explore detailed historical ranges and trends.</p>
+        <a href="/pages/data_detailed_graph" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Open Details
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 3b: Isolation Forest -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="brain-circuit" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Isolation Forest</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Real-time 2D decision boundary scatter plot visualizer.</p>
+        <a href="/pages/isolation_forest" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Open Plot
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 3c: Manage ACs -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="layers" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Manage ACs</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Add or delete ACs, train each AC's model, export data.</p>
+        <a href="/pages/ac_manager" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Open Manager
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 3b: Historical Data -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="history" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Historical Data</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Audit daily logs, perform rules check, and view trends.</p>
+        <a href="/pages/historical_data" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Audit Logs
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 4: AC Setup -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="thermometer-snowflake" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">AC Setup</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Configure the AC operating mode & thermostat.</p>
+        <a href="/pages/ac_setup" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Configure AC
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 5: Contacts -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="users" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Contacts</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Manage notification recipients and access.</p>
+        <a href="/pages/contacts" class="inline-flex items-center justify-center w-full bg-brand-50 group-hover:bg-brand-600 text-brand-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Manage Contacts
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 6: Alerts -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-red-50 text-red-500 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="bell-ring" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">System Alerts</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">View, manage, and dismiss critical system alerts.</p>
+        <a href="/pages/alerts" class="inline-flex items-center justify-center w-full bg-red-50 group-hover:bg-red-500 text-red-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          View Alerts
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 7: Traccar Setup -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="key-round" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Traccar Setup</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Configure Traccar SMS URL and API key used for notifications.</p>
+        <a href="/pages/traccar_setup" class="inline-flex items-center justify-center w-full bg-indigo-50 group-hover:bg-indigo-600 text-indigo-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Configure Traccar
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 8: AI Setup -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-brand-100 hover:shadow-xl hover:shadow-brand-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="sparkles" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">AI Setup</h2>
+        <p class="text-brand-800 text-sm mb-6 flex-grow">Configure AI API URL, key, and default model for anomaly analysis.</p>
+        <a href="/pages/ai_setup" class="inline-flex items-center justify-center w-full bg-emerald-50 group-hover:bg-emerald-600 text-emerald-600 group-hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Configure AI
+          <i data-lucide="arrow-right" class="w-4 h-4 ml-2"></i>
+        </a>
+      </div>
+
+      <!-- Card 9: System Shutdown -->
+      <div class="group bg-white rounded-2xl p-6 shadow-sm border border-red-100 hover:shadow-xl hover:shadow-red-600/10 hover:-translate-y-1 transition-all duration-300 flex flex-col">
+        <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
+          <i data-lucide="power" class="w-6 h-6"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-1">Shutdown System</h2>
+        <p class="text-brand-800 text-sm mb-4 flex-grow">Safely power off the Raspberry Pi operating system.</p>
+        <button id="shutdown-btn" type="button" class="inline-flex items-center justify-center w-full bg-red-50 hover:bg-red-600 text-red-600 hover:text-white font-semibold py-2.5 px-4 rounded-xl transition-colors duration-300">
+          Shutdown Pi
+          <i data-lucide="power" class="w-4 h-4 ml-2"></i>
+        </button>
+        <p id="shutdown-status" class="text-xs mt-3 text-brand-800 hidden"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Initialize Icons -->
+  <script>
+    lucide.createIcons();
+
+    const shutdownBtn = document.getElementById("shutdown-btn");
+    const shutdownStatus = document.getElementById("shutdown-status");
+
+    if (shutdownBtn && shutdownStatus) {
+      shutdownBtn.addEventListener("click", async () => {
+        const confirmed = window.confirm("Are you sure you want to shut down this Raspberry Pi?");
+        if (!confirmed) {
+          return;
+        }
+
+        shutdownBtn.disabled = true;
+        shutdownBtn.classList.add("opacity-70", "cursor-not-allowed");
+        shutdownStatus.classList.remove("hidden");
+        shutdownStatus.textContent = "Sending shutdown command...";
+
+        try {
+          const response = await fetch("/system/shutdown", { method: "POST" });
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          shutdownStatus.textContent = "Shutdown command accepted. Device will power off shortly.";
+        } catch (error) {
+          shutdownBtn.disabled = false;
+          shutdownBtn.classList.remove("opacity-70", "cursor-not-allowed");
+          shutdownStatus.textContent = "Failed to send shutdown command. Check API permissions/logs.";
+        }
+      });
+    }
+  </script>
+  </div>
+</body>
+</html>

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirBnBrrr — AC Setup</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f3fafb',
+                100: '#C1E6EC',
+                500: '#62B6DC',
+                600: '#1E6AA6',
+                700: '#185585',
+                800: '#4b6b80',
+                900: '#0b1d30',
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+        /* Custom dropdown arrow for standard select elements */
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+        }
+    </style>
+</head>
+
+<body class="bg-brand-50 min-h-screen font-sans antialiased text-slate-800">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <!-- Centered Flex Wrapper under Navbar -->
+    <div class="flex items-center justify-center p-4 sm:p-8 min-h-[calc(100vh-4rem)]">
+      <main class="w-full max-w-lg bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+
+        <!-- Header Section -->
+        <div class="bg-brand-600 px-6 py-5 text-white flex items-center gap-3">
+            <i data-lucide="thermometer-snowflake" class="w-7 h-7"></i>
+            <h1 class="text-2xl font-bold tracking-tight">AC Setup</h1>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <!-- Form Section -->
+            <form id="acForm" class="space-y-6">
+
+                <div>
+                    <label for="ac_status" class="block text-sm font-semibold text-slate-700 mb-2">AC Status</label>
+                    <select id="ac_status" name="ac_status"
+                        class="block w-full rounded-xl border-slate-300 bg-slate-50 py-3 px-4 pr-10 text-slate-900 border focus:border-brand-600 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none transition-colors duration-200 cursor-pointer">
+                        <option value="0">Off</option>
+                        <option value="1">Fan</option>
+                        <option value="2">Low Cool</option>
+                        <option value="3">Med Cool</option>
+                        <option value="4">High Cool</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="ac_thermostat" class="block text-sm font-semibold text-slate-700 mb-2">AC
+                        Thermostat</label>
+                    <select id="ac_thermostat" name="ac_thermostat"
+                        class="block w-full rounded-xl border-slate-300 bg-slate-50 py-3 px-4 pr-10 text-slate-900 border focus:border-brand-600 focus:bg-white focus:ring-2 focus:ring-brand-100 focus:outline-none transition-colors duration-200 cursor-pointer">
+                        <option value="0">Not Set</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 flex flex-col sm:flex-row gap-3 items-center">
+                    <button
+                        class="w-full sm:w-auto flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-3 px-5 rounded-xl transition-colors duration-200 shadow-sm flex items-center justify-center gap-2 cursor-pointer border-0"
+                        type="submit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Save Settings
+                    </button>
+                    <button
+                        class="w-full sm:w-auto bg-white hover:bg-slate-50 text-slate-700 font-semibold py-3 px-5 rounded-xl border border-slate-300 transition-colors duration-200 shadow-sm flex items-center justify-center gap-2"
+                        type="button" id="refresh">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                            <path d="M3 3v5h5"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+
+                <!-- Status Message -->
+                <div class="text-center text-sm font-medium min-h-[1.25rem] transition-all" id="status"></div>
+            </form>
+
+            <hr class="border-slate-200 my-8">
+
+            <!-- Information Tip -->
+            <div class="bg-brand-50 border border-brand-100 rounded-2xl p-5">
+                <div class="flex items-start gap-3">
+                    <div class="bg-brand-100 text-brand-700 p-2 rounded-lg mt-0.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M12 16v-4"></path>
+                            <path d="M12 8h.01"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-brand-900 font-bold text-sm mb-2 leading-tight">Important: Keep synced with
+                            physical AC</h3>
+                        <p class="text-brand-800/80 text-sm mb-3">For machine-learning data to be accurate, the values
+                            selected here must match the actual settings on the air conditioner.</p>
+
+                        <ul class="text-brand-800/80 text-sm space-y-2 list-disc pl-4 marker:text-brand-500">
+                            <li>Set the <strong class="text-brand-900 font-semibold">AC Status</strong> here to the
+                                same mode currently active on the physical AC (use the numeric codes 1–6 shown).</li>
+                            <li>Set the <strong class="text-brand-900 font-semibold">AC Thermostat</strong> here to
+                                the same numeric level (1–10) as the physical thermostat.</li>
+                            <li>If the UI and the physical unit differ, collected telemetry will be mislabeled and harm
+                                model training.</li>
+                        </ul>
+
+                        <p
+                            class="text-brand-900 font-medium text-sm mt-4 bg-brand-100/50 p-3 rounded-lg border border-brand-100/50">
+                            When you change settings on this page, also change the AC itself to the same values before
+                            collecting data.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+  </div>
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const acForm = document.getElementById('acForm');
+
+        async function load() {
+            statusEl.textContent = '';
+            try {
+                const res = await fetch('/ac_setup');
+                if (!res.ok) throw new Error('Failed to load');
+                const j = await res.json();
+
+                // if stored as numeric value or label, try to match by value first
+                const acStatusVal = j.ac_status ?? '';
+                const statusSelect = document.getElementById('ac_status');
+
+                // set value if exists among options, otherwise try to map known labels
+                if ([...statusSelect.options].some(o => o.value === acStatusVal)) {
+                    statusSelect.value = acStatusVal;
+                } else {
+                    // map common label -> value
+                    const map = {
+                        'Low Fan': '1', 'Med Fan': '2', 'High Fan': '3',
+                        'Low Cool': '4', 'Med Cool': '5', 'High Cool': '6'
+                    };
+                    statusSelect.value = map[acStatusVal] ?? '';
+                }
+
+                const thermoVal = j.ac_thermostat ?? '';
+                const thermoSelect = document.getElementById('ac_thermostat');
+                if ([...thermoSelect.options].some(o => o.value === thermoVal)) {
+                    thermoSelect.value = thermoVal;
+                } else if (thermoVal && !isNaN(Number(thermoVal))) {
+                    // numeric string, set if in range
+                    thermoSelect.value = String(Math.min(10, Math.max(1, Number(thermoVal))));
+                } else {
+                    thermoSelect.value = '';
+                }
+            } catch (err) {
+                statusEl.style.color = '#ef4444'; // Tailwind text-red-500
+                statusEl.textContent = 'Error loading settings';
+            }
+        }
+
+        acForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusEl.style.color = '#334155'; // Tailwind text-slate-700
+            statusEl.textContent = 'Saving...';
+
+            const payload = {
+                ac_status: document.getElementById('ac_status').value,
+                ac_thermostat: document.getElementById('ac_thermostat').value
+            };
+
+            try {
+                const res = await fetch('/ac_setup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error('Save failed');
+                const j = await res.json();
+
+                statusEl.style.color = '#10b981'; // Tailwind text-emerald-500
+                statusEl.textContent = 'Settings successfully saved!';
+
+                // Clear the success message after 3 seconds
+                setTimeout(() => {
+                    if (statusEl.textContent === 'Settings successfully saved!') {
+                        statusEl.textContent = '';
+                    }
+                }, 3000);
+
+            } catch (err) {
+                statusEl.style.color = '#ef4444'; // Tailwind text-red-500
+                statusEl.textContent = 'Error saving settings';
+            }
+        });
+
+        document.getElementById('refresh').addEventListener('click', load);
+
+        window.addEventListener('load', load);
+    </script>
+    </div>
+  </div>
+</body>
+
+</html>

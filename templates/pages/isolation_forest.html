@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Isolation Forest - AirBnBrrr</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                50: '#f3fafb',
+                100: '#C1E6EC',
+                500: '#62B6DC',
+                600: '#1E6AA6',
+                700: '#185585',
+                800: '#4b6b80',
+                900: '#0b1d30',
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        /* Gradient contour styling for scatter chart background */
+        .contour-bg {
+            background: radial-gradient(circle at 35% 40%, rgba(30, 106, 166, 0.18) 0%, rgba(30, 106, 166, 0.08) 35%, rgba(15, 23, 42, 0.03) 70%),
+                        radial-gradient(circle at 70% 65%, rgba(16, 185, 129, 0.12) 0%, rgba(16, 185, 129, 0.04) 30%, transparent 60%),
+                        #ffffff;
+        }
+    </style>
+</head>
+
+<body class="text-slate-800 antialiased min-h-screen bg-brand-50">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-3">
+                    <i data-lucide="brain-circuit" class="text-brand-600 w-7 h-7"></i>
+                    AirBnBrrr: AI-Powered HVAC IoT Anomaly Detection System
+                </h1>
+                <p class="text-sm text-slate-500 mt-1">Real-time Isolation Forest 2D Decision Boundary & Multivariate Scatter Plot</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <span id="live-indicator" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Live Polling (5s)
+                </span>
+                <button id="refresh-btn" class="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white text-xs font-bold rounded-xl transition-all shadow-sm cursor-pointer">
+                    <i data-lucide="refresh-cw" class="w-4 h-4" id="refresh-icon"></i>
+                    Refresh Data
+                </button>
+            </div>
+        </header>
+
+        <!-- Segmented Toggle Tab Bar (Filter by AC Unit) -->
+        <div class="mb-6 flex flex-wrap gap-2 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm max-w-3xl">
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-bold transition-all border-0 cursor-pointer bg-brand-600 text-white shadow-sm" data-ac="">
+                All Units
+            </button>
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50" data-ac="AC1">
+                AC1
+            </button>
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50" data-ac="AC2">
+                AC2
+            </button>
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50" data-ac="AC3">
+                AC3
+            </button>
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50" data-ac="AC4">
+                AC4
+            </button>
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50" data-ac="AC5">
+                AC5
+            </button>
+            <button class="ac-toggle-btn flex-1 text-center py-2 px-3 rounded-xl text-xs font-semibold transition-all border-0 cursor-pointer bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50" data-ac="AC6">
+                AC6
+            </button>
+        </div>
+
+        <!-- KPI Metrics Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-brand-50 rounded-xl text-brand-600">
+                    <i data-lucide="database" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Observations</span>
+                    <h3 id="stat-total" class="text-xl font-extrabold text-slate-900 mt-0.5">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-emerald-50 rounded-xl text-emerald-600">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Regular Observations</span>
+                    <h3 id="stat-regular" class="text-xl font-extrabold text-emerald-700 mt-0.5">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-rose-50 rounded-xl text-rose-600">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Abnormal Outliers</span>
+                    <h3 id="stat-abnormal" class="text-xl font-extrabold text-rose-600 mt-0.5">0</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-4">
+                <div class="p-3 bg-slate-100 rounded-xl text-slate-600">
+                    <i data-lucide="sliders" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Model Contamination</span>
+                    <h3 id="stat-contamination" class="text-xl font-extrabold text-slate-800 mt-0.5">5.0%</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scatter Chart Main Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                        <i data-lucide="scatter-chart" class="w-5 h-5 text-brand-600"></i>
+                        Real-Time Isolation Forest Scatter Plot
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">12-Sensor Feature Projection via 2D PCA & Statistical Outlier Classifier</p>
+                </div>
+
+                <!-- Custom Legend -->
+                <div class="flex flex-wrap items-center gap-4 text-xs font-bold bg-slate-50 p-2.5 rounded-xl border border-slate-200/60">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-white border-2 border-slate-700 inline-block shadow-sm"></span>
+                        <span class="text-slate-700">training observations</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 border border-emerald-600 inline-block shadow-sm"></span>
+                        <span class="text-slate-700">new regular observations</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-rose-600 border border-rose-700 inline-block shadow-sm animate-pulse"></span>
+                        <span class="text-slate-700">new abnormal observations</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full h-[450px] contour-bg rounded-xl border border-slate-200/80 p-2">
+                <canvas id="scatterCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Outliers Table Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                    <i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>
+                    Recent Flagged Outliers
+                </h3>
+                <span id="outliers-count-badge" class="text-xs font-bold px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-full">0 Anomalies</span>
+            </div>
+
+            <div class="overflow-x-auto custom-scrollbar">
+                <table class="w-full text-left border-collapse text-sm">
+                    <thead>
+                        <tr class="bg-slate-50/75 border-b border-slate-100 text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                            <th class="py-3.5 px-6">Timestamp</th>
+                            <th class="py-3.5 px-6">Unit</th>
+                            <th class="py-3.5 px-6">PCA (X, Y)</th>
+                            <th class="py-3.5 px-6">Anomaly Score</th>
+                            <th class="py-3.5 px-6">Power</th>
+                            <th class="py-3.5 px-6">Temp</th>
+                            <th class="py-3.5 px-6">Vibration</th>
+                            <th class="py-3.5 px-6">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="outliers-tbody" class="divide-y divide-slate-100">
+                        <!-- Dynamic Outlier Rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+  </div>
+
+  <script>
+      // Initialize Lucide icons
+      lucide.createIcons();
+
+      let scatterChart = null;
+      let pollingInterval = null;
+
+      async function fetchScatterData() {
+          const refreshIcon = document.getElementById('refresh-icon');
+          if (refreshIcon) refreshIcon.classList.add('animate-spin');
+
+          try {
+              let url = '/api/isolation_forest/scatter?limit=500';
+              if (activeAC) {
+                  url += '&ac_unit=' + encodeURIComponent(activeAC);
+              }
+              const res = await fetch(url);
+              if (!res.ok) throw new Error('API Request Failed');
+              const data = await res.json();
+              
+              updateStatsUI(data.stats);
+              renderScatterChart(data.points);
+              renderOutliersTable(data.points);
+          } catch (err) {
+              console.error("Error loading isolation forest scatter data:", err);
+          } finally {
+              if (refreshIcon) {
+                  setTimeout(() => refreshIcon.classList.remove('animate-spin'), 400);
+              }
+          }
+      }
+
+      function updateStatsUI(stats) {
+          if (!stats) return;
+          document.getElementById('stat-total').textContent = stats.total || 0;
+          document.getElementById('stat-regular').textContent = stats.regular || 0;
+          document.getElementById('stat-abnormal').textContent = stats.abnormal || 0;
+          document.getElementById('stat-contamination').textContent = ((stats.contamination || 0.05) * 100).toFixed(1) + '%';
+          document.getElementById('outliers-count-badge').textContent = `${stats.abnormal || 0} Anomalies`;
+      }
+
+      function renderScatterChart(points) {
+          const ctx = document.getElementById('scatterCanvas').getContext('2d');
+
+          const trainingData = [];
+          const regularData = [];
+          const abnormalData = [];
+
+          points.forEach(p => {
+              const pointObj = {
+                  x: p.x,
+                  y: p.y,
+                  raw: p
+              };
+
+              if (p.category === 'abnormal') {
+                  abnormalData.push(pointObj);
+              } else if (p.category === 'training') {
+                  trainingData.push(pointObj);
+              } else {
+                  regularData.push(pointObj);
+              }
+          });
+
+          if (scatterChart) {
+              scatterChart.data.datasets[0].data = trainingData;
+              scatterChart.data.datasets[1].data = regularData;
+              scatterChart.data.datasets[2].data = abnormalData;
+              scatterChart.update('none');
+              return;
+          }
+
+          scatterChart = new Chart(ctx, {
+              type: 'scatter',
+              data: {
+                  datasets: [
+                      {
+                          label: 'training observations',
+                          data: trainingData,
+                          backgroundColor: '#ffffff',
+                          borderColor: '#334155',
+                          borderWidth: 1.5,
+                          pointRadius: 4.5,
+                          pointHoverRadius: 7,
+                      },
+                      {
+                          label: 'new regular observations',
+                          data: regularData,
+                          backgroundColor: '#10b981',
+                          borderColor: '#047857',
+                          borderWidth: 1.2,
+                          pointRadius: 5.5,
+                          pointHoverRadius: 8,
+                      },
+                      {
+                          label: 'new abnormal observations',
+                          data: abnormalData,
+                          backgroundColor: '#e11d48',
+                          borderColor: '#9f1239',
+                          borderWidth: 1.5,
+                          pointRadius: 7,
+                          pointHoverRadius: 10,
+                      }
+                  ]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                      legend: {
+                          display: false // Using custom top legend
+                      },
+                      tooltip: {
+                          backgroundColor: '#0f172a',
+                          titleFont: { size: 12, weight: 'bold' },
+                          bodyFont: { size: 11 },
+                          padding: 12,
+                          cornerRadius: 10,
+                          callbacks: {
+                              label: function(ctx) {
+                                  const p = ctx.raw.raw;
+                                  if (!p) return `(${ctx.parsed.x}, ${ctx.parsed.y})`;
+                                  return [
+                                      `Category: ${p.category.toUpperCase()}`,
+                                      `Timestamp: ${p.timestamp || 'N/A'}`,
+                                      `Unit: ${(window.AC_LABELS || {})[p.ac_unit] || p.ac_unit}`,
+                                      `Isolation Score: ${p.score}`,
+                                      `Power: ${p.pzem_power} W | Temp: ${p.dht_temp} °C`,
+                                      `Vibration: ${p.vibration} Hz | Voltage: ${p.pzem_voltage} V`
+                                  ];
+                              }
+                          }
+                      }
+                  },
+                  scales: {
+                      x: {
+                          grid: {
+                              color: 'rgba(226, 232, 240, 0.6)',
+                          },
+                          ticks: {
+                              font: { family: 'Inter', size: 11, weight: '600' },
+                              color: '#64748b'
+                          }
+                      },
+                      y: {
+                          grid: {
+                              color: 'rgba(226, 232, 240, 0.6)',
+                          },
+                          ticks: {
+                              font: { family: 'Inter', size: 11, weight: '600' },
+                              color: '#64748b'
+                          }
+                      }
+                  }
+              }
+          });
+      }
+
+      function renderOutliersTable(points) {
+          const tbody = document.getElementById('outliers-tbody');
+          tbody.innerHTML = '';
+
+          const outliers = points.filter(p => p.category === 'abnormal');
+
+          if (outliers.length === 0) {
+              tbody.innerHTML = `
+                  <tr class="text-center text-slate-400 bg-white">
+                      <td colspan="8" class="py-8 px-6">
+                          <span class="text-xs font-semibold">No abnormal outliers currently detected. All telemetry observations within normal threshold boundaries.</span>
+                      </td>
+                  </tr>
+              `;
+              return;
+          }
+
+          outliers.slice(-10).reverse().forEach(o => {
+              const tr = document.createElement('tr');
+              tr.className = 'hover:bg-rose-50/30 transition-colors font-medium';
+              tr.innerHTML = `
+                  <td class="py-3 px-6 text-slate-900 whitespace-nowrap">${o.timestamp || 'Just now'}</td>
+                  <td class="py-3 px-6 whitespace-nowrap">
+                      <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-brand-50 text-brand-700 border border-brand-100">${(window.AC_LABELS || {})[o.ac_unit] || o.ac_unit}</span>
+                  </td>
+                  <td class="py-3 px-6 text-slate-600 font-mono text-xs whitespace-nowrap">(${o.x}, ${o.y})</td>
+                  <td class="py-3 px-6 font-bold text-slate-700 whitespace-nowrap">${o.score}</td>
+                  <td class="py-3 px-6 text-slate-800 whitespace-nowrap">${o.pzem_power} W</td>
+                  <td class="py-3 px-6 text-slate-800 whitespace-nowrap">${o.dht_temp} °C</td>
+                  <td class="py-3 px-6 text-slate-800 whitespace-nowrap">${o.vibration} Hz</td>
+                  <td class="py-3 px-6 whitespace-nowrap">
+                      <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                          <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span> Anomaly
+                      </span>
+                  </td>
+              `;
+              tbody.appendChild(tr);
+          });
+      }
+
+      document.getElementById('refresh-btn').addEventListener('click', fetchScatterData);
+
+      // AC Unit Filter logic
+      let activeAC = localStorage.getItem('data_gathered_active_ac') || '';
+
+      document.querySelectorAll('.ac-toggle-btn').forEach(btn => {
+          if (btn.getAttribute('data-ac') === activeAC) {
+              btn.classList.remove('bg-white', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-50', 'font-semibold');
+              btn.classList.add('bg-brand-600', 'text-white', 'shadow-sm', 'font-bold');
+          } else {
+              btn.classList.remove('bg-brand-600', 'text-white', 'shadow-sm', 'font-bold');
+              btn.classList.add('bg-white', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-50', 'font-semibold');
+          }
+
+          btn.addEventListener('click', () => {
+              document.querySelectorAll('.ac-toggle-btn').forEach(b => {
+                  b.classList.remove('bg-brand-600', 'text-white', 'shadow-sm', 'font-bold');
+                  b.classList.add('bg-white', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-50', 'font-semibold');
+              });
+              btn.classList.remove('bg-white', 'text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-50', 'font-semibold');
+              btn.classList.add('bg-brand-600', 'text-white', 'shadow-sm', 'font-bold');
+
+              activeAC = btn.getAttribute('data-ac');
+              localStorage.setItem('data_gathered_active_ac', activeAC);
+              fetchScatterData();
+          });
+      });
+
+      // Initial load & 5s polling interval
+      fetchScatterData();
+      pollingInterval = setInterval(fetchScatterData, 5000);
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>System Alerts</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f3fafb',
+              100: '#C1E6EC',
+              500: '#62B6DC',
+              600: '#1E6AA6',
+              700: '#185585',
+              800: '#4b6b80',
+              900: '#0b1d30',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    /* Custom Scrollbar for the table wrapper */
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f8fafc;
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Smooth transitions for modal */
+    .modal-transition {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+  </style>
+</head>
+
+<body class="bg-brand-50 text-slate-800 antialiased min-h-screen font-sans">
+
+  <!-- INCLUDE navigation.html -->
+
+  <!-- Layout Wrapper with Left Sidebar Offset -->
+  <div class="lg:pl-64 pt-16 lg:pt-0">
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+
+    <!-- Header Section -->
+    <header class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900 flex items-center gap-3 flex-wrap">
+          <div class="p-2 bg-rose-100 rounded-lg">
+            <i data-lucide="bell-ring" class="text-rose-600 w-6 h-6"></i>
+          </div>
+          System Alerts
+        </h1>
+        <p class="text-slate-500 mt-2 text-sm sm:text-base ml-1">
+          Anomalies detected by the system monitoring service.
+        </p>
+      </div>
+    </header>
+
+    <!-- Normal Operating Parameters Reference Guide -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 mb-6">
+      <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleReferenceGuide()">
+        <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2.5">
+          <div class="p-1.5 bg-blue-50 rounded-lg text-blue-600 border border-blue-100 flex items-center justify-center">
+            <i data-lucide="info" class="w-4 h-4"></i>
+          </div>
+          Normal Operating Guidelines
+        </h2>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400 font-semibold" id="ref-status-text">Show guide</span>
+          <i data-lucide="chevron-down" id="ref-chevron" class="w-4 h-4 text-slate-400 transition-transform duration-200"></i>
+        </div>
+      </div>
+      
+      <div id="reference-guide-content" class="mt-4 hidden border-t border-slate-100 pt-4">
+        <div class="flex items-center gap-2 mb-3 text-xs text-slate-500">
+          <span>Limits of</span>
+          <select id="guide-ac" class="rounded-lg border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-slate-700">
+            <option value="AC1">AC1</option>
+          </select>
+          <span class="text-slate-400">(change them on the Manage ACs page)</span>
+        </div>
+        <div id="guide-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+      </div>
+    </div>
+
+    <!-- Alerts Content Wrapper (toggled by JS) -->
+    <div id="alerts-content" class="hidden">
+      <!-- Main Card & Table (Desktop) -->
+      <div id="alerts-desktop-container" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hidden md:block">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table id="alerts-table" class="w-full text-left border-collapse whitespace-nowrap">
+            <thead>
+              <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                <th class="px-6 py-4 font-semibold w-32">Alert ID</th>
+                <th class="px-6 py-4 font-semibold w-48">Timestamp</th>
+                <th class="px-6 py-4 font-semibold w-full min-w-[300px]">Summary</th>
+                <th class="px-6 py-4 font-semibold text-right w-32">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="alerts-tbody" class="divide-y divide-slate-100">
+              <!-- Rows injected by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mobile Cards View -->
+      <div id="alerts-mobile-list" class="space-y-4 md:hidden mb-6">
+        <!-- Cards injected by JavaScript -->
+      </div>
+
+      <!-- Shared Pagination Footer -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <span id="pagination-info" class="text-xs font-semibold text-slate-500">
+            Showing 0-0 of 0 entries
+        </span>
+        <div class="flex items-center gap-2">
+            <button id="prev-page-btn" class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none">
+                <i data-lucide="chevron-left" class="w-3.5 h-3.5"></i>
+                Previous
+            </button>
+            <span id="pagination-pages" class="text-xs font-bold text-slate-600 px-3">
+                Page 1 of 1
+            </span>
+            <button id="next-page-btn" class="flex items-center gap-1 px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 active:bg-slate-100 text-slate-600 hover:text-slate-800 text-xs font-semibold rounded-lg transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none">
+                Next
+                <i data-lucide="chevron-right" class="w-3.5 h-3.5"></i>
+            </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State (Hidden by default) -->
+    <div id="empty-state" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-16 text-center">
+      <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-100 mb-4">
+        <i data-lucide="shield-check" class="w-8 h-8 text-brand-600"></i>
+      </div>
+      <h3 class="text-xl font-semibold text-slate-900">All Clear</h3>
+      <p class="text-slate-500 mt-2 max-w-sm mx-auto">No anomalies detected at this time. The system is operating normally.</p>
+    </div>
+  </div>
+
+  <!-- Custom Delete Confirmation Modal -->
+  <div id="delete-modal"
+    class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden items-center justify-center opacity-0 modal-transition">
+    <div id="delete-modal-content"
+      class="bg-white rounded-2xl shadow-xl max-w-sm w-full mx-4 transform scale-95 modal-transition p-6">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-rose-100 mx-auto mb-4">
+        <i data-lucide="alert-triangle" class="text-rose-600 w-6 h-6"></i>
+      </div>
+      <h3 class="text-xl font-bold text-center text-slate-900 mb-2">Delete Alert?</h3>
+      <p class="text-center text-slate-500 text-sm mb-6">
+        Are you sure you want to dismiss this alert? This action cannot be undone and will remove it from the log.
+      </p>
+      <div class="flex gap-3">
+        <button id="cancel-delete"
+          class="flex-1 px-4 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300">
+          Cancel
+        </button>
+        <button id="confirm-delete"
+          class="flex-1 px-4 py-2.5 bg-rose-600 text-white rounded-xl hover:bg-rose-700 font-medium transition-colors shadow-sm shadow-rose-200 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 flex justify-center items-center">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Mock data to ensure the UI looks good even if the backend isn't connected
+    const mockData = [
+    ];
+
+    let currentAlerts = [...mockData];
+    let alertToDeleteId = null;
+    let currentPage = 1;
+    const pageSize = 25;
+
+    // Which kind of attention the AC needs. The WORST problem decides, not the first one found.
+    function getACConditionStatus(severity, issue, sensorKey) {
+      const iss = (issue || '').toLowerCase();
+      const key = (sensorKey || '').toLowerCase();
+      const byKey = {
+        individual_current_high: 'Need Repair', compressor_overheating: 'Need Repair', individual_power_high: 'Need Repair',
+        high_voltage: 'Check Power Supply', low_voltage: 'Check Power Supply'
+      };
+      if (byKey[key]) return byKey[key];
+      if (key.includes('offline') || iss.includes('offline')) return 'Check Sensor';
+      if (key.includes('voltage') || iss.includes('voltage')) return 'Check Power Supply';
+      if (severity === 'Critical' || iss.includes('overload') || iss.includes('overheating') || (iss.includes('high') && iss.includes('current'))) return 'Need Repair';
+      if (key || iss) {
+        if (severity === 'High' || severity === 'Medium') return 'Need Maintenance';
+        if (severity === 'Low') return 'Need Maintenance';
+      }
+      return 'Good condition';
+    }
+
+    const STATUS_RANK = { 'Need Repair': 5, 'Check Power Supply': 4, 'Need Maintenance': 3, 'Check Sensor': 2, 'Need Cleaning': 1, 'Good condition': 0 };
+    function worstStatus(list) {
+      let best = 'Good condition';
+      list.forEach(s => { if ((STATUS_RANK[s] || 0) > (STATUS_RANK[best] || 0)) best = s; });
+      return best;
+    }
+
+    function getACConditionColorClass(status) {
+      if (status === 'Need Repair') return 'text-red-600 font-extrabold text-sm ml-1';
+      if (status === 'Check Power Supply') return 'text-amber-600 font-extrabold text-sm ml-1';
+      if (status === 'Need Maintenance') return 'text-rose-500 font-extrabold text-sm ml-1';
+      if (status === 'Check Sensor') return 'text-violet-600 font-extrabold text-sm ml-1';
+      if (status === 'Need Cleaning') return 'text-blue-600 font-extrabold text-sm ml-1';
+      return 'text-emerald-600 font-extrabold text-sm ml-1';
+    }
+
+    function getAlertStatusText(a) {
+      try {
+        if (a.diagnoses) {
+          let parsed = typeof a.diagnoses === 'string' ? JSON.parse(a.diagnoses) : a.diagnoses;
+          if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+          
+          const ruleResult = parsed.rule_diagnoses;
+          const ruleFindings = (ruleResult && ruleResult.findings) || [];
+          
+          let aiDiagnoses = parsed.ai_diagnoses;
+          if (aiDiagnoses && aiDiagnoses.raw && !aiDiagnoses.diagnoses) {
+            const cleanRaw = aiDiagnoses.raw.trim();
+            const start = cleanRaw.indexOf('{');
+            const end = cleanRaw.lastIndexOf('}');
+            if (start !== -1 && end !== -1 && end > start) {
+              const parsedAI = JSON.parse(cleanRaw.substring(start, end + 1));
+              if (parsedAI && parsedAI.diagnoses) aiDiagnoses = parsedAI;
+            }
+          }
+          const aiList = (aiDiagnoses && aiDiagnoses.diagnoses) || [];
+          const statuses = [];
+          ruleFindings.forEach(f => {
+            statuses.push(getACConditionStatus(f.severity, f.issue, f.sensor_key));
+          });
+          aiList.forEach(d => {
+            statuses.push(getACConditionStatus(d.severity, d.issue, ''));
+          });
+
+          if (statuses.length > 0) return worstStatus(statuses);
+        }
+      } catch (e) {
+        console.error("Failed to parse diagnoses for status:", e);
+      }
+      
+      const sum = (a.summary || '').toLowerCase();
+      if (sum.includes('heartbeat') || sum.includes('healthy') || sum.includes('normal')) {
+        return 'Good condition';
+      }
+      if (sum.includes('freezing') || sum.includes('filter') || sum.includes('clean')) {
+        return 'Need Cleaning';
+      }
+      if (sum.includes('repair') || sum.includes('critical')) {
+        return 'Need Repair';
+      }
+      if (sum.includes('overheating') || sum.includes('vibration') || sum.includes('maintenance') || sum.includes('leak') || sum.includes('refrigerant') || sum.includes('humidity')) {
+        return 'Need Maintenance';
+      }
+      return 'Need Maintenance';
+    }
+
+    function getAlertTypeName(a) {
+      try {
+        if (a.diagnoses) {
+          let parsed = typeof a.diagnoses === 'string' ? JSON.parse(a.diagnoses) : a.diagnoses;
+          if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+
+          // New alerts carry a plain-language plan: use its most urgent problem as the headline
+          const planSteps = (parsed.action_plan && parsed.action_plan.steps) || [];
+          if (planSteps.length > 0 && planSteps[0].title) {
+            return planSteps[0].title + (planSteps.length > 1 ? ` (+${planSteps.length - 1} more)` : '');
+          }
+
+          // Check rule findings first (most authoritative)
+          const ruleResult = parsed.rule_diagnoses;
+          const ruleFindings = (ruleResult && ruleResult.findings) || [];
+          if (ruleFindings.length > 0) {
+            // Sort by severity and pick the top one
+            const sevOrder = { 'Critical': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'Normal': 0 };
+            const sorted = [...ruleFindings].sort((a, b) => (sevOrder[b.severity] || 0) - (sevOrder[a.severity] || 0));
+            const more = sorted.length > 1 ? ` (+${sorted.length - 1} more)` : '';
+            return (sorted[0].issue || '') + more;
+          }
+
+          // Fall back to AI diagnoses
+          let aiDiagnoses = parsed.ai_diagnoses;
+          const aiList = (aiDiagnoses && aiDiagnoses.diagnoses) || [];
+          if (aiList.length > 0) {
+            return aiList[0].issue || '';
+          }
+
+          // Only the per-AC model flagged it: use the first step of the saved action plan
+          const plan = parsed.action_plan;
+          if (plan && plan.steps && plan.steps.length > 0) {
+            return plan.steps[0].title || '';
+          }
+        }
+      } catch (e) {}
+
+      // Fall back to summary keyword extraction
+      const sum = (a.summary || '').toLowerCase();
+      if (sum.includes('heartbeat') || sum.includes('healthy')) return 'System Healthy';
+      if (sum.includes('overheating')) return 'Compressor Overheating';
+      if (sum.includes('vibration')) return 'Abnormal Compressor Vibration';
+      if (sum.includes('humidity')) return 'Low Humidity';
+      return '';
+    }
+
+    function formatTimestampPlus8Hours(timestamp) {
+      if (!timestamp) return 'N/A';
+
+      let tsStr = String(timestamp).trim();
+      if (tsStr.includes(' ') && !tsStr.includes('T')) {
+        tsStr = tsStr.replace(' ', 'T');
+      }
+      if (/([+-]\d{2})$/.test(tsStr)) {
+        tsStr = tsStr + ":00";
+      } else if (!/([+-]\d{2}(:?\d{2})?|Z)$/i.test(tsStr)) {
+        tsStr = tsStr + "+08:00";
+      }
+
+      const parsedDate = new Date(tsStr);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return timestamp;
+      }
+
+      return new Intl.DateTimeFormat('en-PH', {
+        timeZone: 'Asia/Manila',
+        year: 'numeric',
+        month: 'short',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true
+      }).format(parsedDate);
+    }
+
+    async function fetchAlerts() {
+      try {
+        const res = await fetch('/alerts');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) {
+            currentAlerts = data;
+          }
+        }
+      } catch (error) {
+        console.log('Using mock data for preview purposes.');
+      }
+      renderAlerts();
+    }
+
+    function updatePaginationUI() {
+      const infoSpan = document.getElementById('pagination-info');
+      const pagesSpan = document.getElementById('pagination-pages');
+      const prevBtn = document.getElementById('prev-page-btn');
+      const nextBtn = document.getElementById('next-page-btn');
+      
+      const totalEntries = currentAlerts.length;
+      const totalPages = Math.ceil(totalEntries / pageSize) || 1;
+      
+      const startIdx = totalEntries === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+      const endIdx = Math.min(currentPage * pageSize, totalEntries);
+      
+      infoSpan.textContent = `Showing ${startIdx}-${endIdx} of ${totalEntries} entries`;
+      pagesSpan.textContent = `Page ${currentPage} of ${totalPages}`;
+      
+      prevBtn.disabled = (currentPage === 1);
+      nextBtn.disabled = (currentPage === totalPages);
+    }
+
+    function renderAlerts() {
+      const tbody = document.getElementById('alerts-tbody');
+      const alertsContent = document.getElementById('alerts-content');
+      const mobileList = document.getElementById('alerts-mobile-list');
+      const emptyState = document.getElementById('empty-state');
+
+      tbody.innerHTML = '';
+      mobileList.innerHTML = '';
+
+      // Call system status health check
+      checkSystemHealth(currentAlerts.length);
+
+      if (currentAlerts.length === 0) {
+        alertsContent.classList.add('hidden');
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      alertsContent.classList.remove('hidden');
+      emptyState.classList.add('hidden');
+
+      // Adjust page index bounds
+      const totalPages = Math.ceil(currentAlerts.length / pageSize) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      // Slice the alerts array for the current page
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      const pageAlerts = currentAlerts.slice(start, end);
+
+      pageAlerts.forEach(a => {
+        const status = getAlertStatusText(a);
+        const formattedTime = formatTimestampPlus8Hours(a.timestamp);
+
+        // 1. Desktop Row
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80 transition-colors group';
+        tr.innerHTML = `
+          <td class="px-6 py-4">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-mono text-xs font-medium">
+              ${a.id}
+            </span>
+          </td>
+          <td class="px-6 py-4 text-sm text-slate-500">
+            <div class="flex items-center gap-2">
+              <i data-lucide="clock" class="w-4 h-4 text-slate-400"></i>
+              ${formattedTime}
+            </div>
+          </td>
+          <td class="px-6 py-4 text-sm text-slate-700 whitespace-normal">
+            <div class="flex flex-col gap-0.5">
+              <div class="flex items-center gap-1">
+                <span class="text-slate-500 text-xs">AC Alert:</span>
+                <span class="font-semibold text-xs text-slate-800">${getAlertTypeName(a)}</span>
+              </div>
+              <span class="${getACConditionColorClass(status)} !ml-0">${status}</span>
+            </div>
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex items-center justify-end gap-2 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+              <a href="/pages/alert?id=${a.id}" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-200" title="View Details">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </a>
+              <button class="delete-btn p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-rose-200" data-id="${a.id}" title="Delete Alert">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+
+        // 2. Mobile Card
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col gap-3';
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200 text-slate-700 font-mono text-xs font-medium">
+              ID: ${a.id}
+            </span>
+            <div class="flex items-center gap-1.5 text-xs text-slate-500">
+              <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+              ${formattedTime}
+            </div>
+          </div>
+          <div class="text-sm text-slate-700 leading-relaxed break-words whitespace-normal flex flex-col gap-0.5">
+            <div class="flex items-center gap-1">
+              <span class="text-slate-500 text-xs">AC Alert:</span>
+              <span class="font-semibold text-xs text-slate-800">${getAlertTypeName(a)}</span>
+            </div>
+            <span class="${getACConditionColorClass(status)} !ml-0">${status}</span>
+          </div>
+          <div class="flex justify-end gap-3 pt-3 border-t border-slate-100 mt-1">
+            <a href="/pages/alert?id=${a.id}" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl transition-colors no-underline">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+              <span>View Details</span>
+            </a>
+            <button class="delete-btn flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-xl transition-colors border-0 cursor-pointer" data-id="${a.id}">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+              <span>Delete</span>
+            </button>
+          </div>
+        `;
+        mobileList.appendChild(card);
+      });
+
+      // Update the pagination footer
+      updatePaginationUI();
+
+      // Re-initialize icons for newly added DOM elements
+      lucide.createIcons();
+      attachHandlers();
+    }
+
+    // --- Modal Logic ---
+    const modal = document.getElementById('delete-modal');
+    const modalContent = document.getElementById('delete-modal-content');
+    const cancelBtn = document.getElementById('cancel-delete');
+    const confirmBtn = document.getElementById('confirm-delete');
+
+    function openModal(id) {
+      alertToDeleteId = id;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+
+      // Small delay to allow display:flex to apply before animating
+      requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modalContent.classList.remove('scale-95');
+      });
+    }
+
+    function closeModal() {
+      alertToDeleteId = null;
+      modal.classList.add('opacity-0');
+      modalContent.classList.add('scale-95');
+
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }, 300);
+    }
+
+    cancelBtn.addEventListener('click', closeModal);
+
+    // Close on clicking outside the modal content
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+
+    confirmBtn.addEventListener('click', async () => {
+      if (!alertToDeleteId) return;
+
+      const id = alertToDeleteId;
+      const originalText = confirmBtn.innerHTML;
+
+      // Loading state for button
+      confirmBtn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i>';
+      confirmBtn.disabled = true;
+      lucide.createIcons();
+
+      try {
+        await fetch(`/alerts/${id}`, { method: 'DELETE' });
+      } catch (e) {
+        console.log('Mock deletion successful.');
+      }
+
+      // Update local state (useful for the mock preview)
+      currentAlerts = currentAlerts.filter(a => a.id !== id);
+
+      // Reset button and close
+      confirmBtn.innerHTML = originalText;
+      confirmBtn.disabled = false;
+      closeModal();
+      renderAlerts();
+    });
+
+    function attachHandlers() {
+      document.querySelectorAll('.delete-btn').forEach(btn => {
+        btn.onclick = (ev) => {
+          ev.preventDefault();
+          const id = btn.getAttribute('data-id');
+          openModal(id);
+        };
+      });
+    }
+
+    document.getElementById('prev-page-btn').addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderAlerts();
+      }
+    });
+
+    document.getElementById('next-page-btn').addEventListener('click', () => {
+      const totalPages = Math.ceil(currentAlerts.length / pageSize) || 1;
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderAlerts();
+      }
+    });
+
+    const GUIDE_TILES = [
+      { key: 'power',       label: 'Power Usage',            unit: 'W',  icon: 'zap',         box: 'bg-amber-50 text-amber-500 border-amber-100' },
+      { key: 'voltage',     label: 'Supply Voltage',         unit: 'V',  icon: 'plug',        box: 'bg-indigo-50 text-indigo-500 border-indigo-100' },
+      { key: 'current',     label: 'Operating Current',      unit: 'A',  icon: 'activity',    box: 'bg-rose-50 text-rose-500 border-rose-100' },
+      { key: 'output_temp', label: 'Output Temperature',     unit: '°C', icon: 'thermometer', box: 'bg-blue-50 text-blue-500 border-blue-100' },
+      { key: 'humidity',    label: 'Output Humidity',        unit: '%',  icon: 'droplets',    box: 'bg-sky-50 text-sky-500 border-sky-100', maxOnly: true },
+      { key: 'outlet_temp', label: 'Outlet Compressor Temp', unit: '°C', icon: 'flame',       box: 'bg-orange-50 text-orange-500 border-orange-100' },
+      { key: 'inlet_temp',  label: 'Inlet Compressor Temp',  unit: '°C', icon: 'snowflake',   box: 'bg-cyan-50 text-cyan-500 border-cyan-100' },
+      { key: 'vibration',   label: 'Compressor Vibration',   unit: 'Hz', icon: 'vibrate',     box: 'bg-purple-50 text-purple-500 border-purple-100', upTo: true }
+    ];
+    async function loadGuide() {
+      const grid = document.getElementById('guide-grid');
+      const code = document.getElementById('guide-ac').value;
+      try {
+        const r = await fetch('/api/acs/' + encodeURIComponent(code) + '/limits', { credentials: 'same-origin' });
+        if (!r.ok) throw new Error('no limits');
+        const L = (await r.json()).limits;
+        const n = (x) => Math.round(x * 100) / 100;
+        grid.innerHTML = GUIDE_TILES.map(t => {
+          const v = L[t.key];
+          const text = t.maxOnly ? `${n(v.max)} ${t.unit} or less` : (t.upTo ? `under ${n(v.max)} ${t.unit}` : `${n(v.min)}–${n(v.max)} ${t.unit}`);
+          return `<div class="flex items-start gap-2.5 p-3 bg-slate-50/50 rounded-xl border border-slate-100/50">
+            <div class="p-1.5 rounded-lg border flex items-center justify-center mt-0.5 ${t.box}"><i data-lucide="${t.icon}" class="w-3.5 h-3.5"></i></div>
+            <div><div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">${t.label}</div>
+            <div class="text-xs font-bold text-slate-700 mt-0.5">${text}</div></div></div>`;
+        }).join('');
+        if (window.lucide) lucide.createIcons();
+      } catch (e) { grid.innerHTML = '<p class="text-xs text-slate-400">Could not load the limits.</p>'; }
+    }
+    document.addEventListener('DOMContentLoaded', () => { const sel = document.getElementById('guide-ac'); if (sel) sel.addEventListener('change', loadGuide); });
+
+    function toggleReferenceGuide() {
+      const content = document.getElementById('reference-guide-content');
+      const chevron = document.getElementById('ref-chevron');
+      const text = document.getElementById('ref-status-text');
+      const isHidden = content.classList.contains('hidden');
+      if (isHidden) {
+        content.classList.remove('hidden');
+        chevron.style.transform = 'rotate(180deg)';
+        text.textContent = 'Hide guide';
+        loadGuide();
+      } else {
+        content.classList.add('hidden');
+        chevron.style.transform = '';
+        text.textContent = 'Show guide';
+      }
+    }
+
+    async function checkSystemHealth(alertsCount) {
+      const badge = document.getElementById('raspi-status-badge');
+      const emptyTitle = document.querySelector('#empty-state h3');
+      const emptyDesc = document.querySelector('#empty-state p');
+      const emptyIconContainer = document.querySelector('#empty-state div');
+
+      try {
+        const response = await fetch('/telemetry/latest');
+        if (!response.ok) {
+          // No telemetry available
+          if (badge) {
+            badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1.5 ml-2";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> Raspi Offline`;
+          }
+          
+          if (emptyTitle) emptyTitle.textContent = "Status Unknown (Raspi Offline)";
+          if (emptyDesc) emptyDesc.textContent = "No active alerts, but the Raspberry Pi is currently offline and has not sent any telemetry data.";
+          if (emptyIconContainer) {
+            emptyIconContainer.className = "inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4";
+            emptyIconContainer.innerHTML = `<i data-lucide="wifi-off" class="w-8 h-8 text-slate-500"></i>`;
+          }
+          if (window.lucide) window.lucide.createIcons();
+          return;
+        }
+
+        const data = await response.json();
+        const tsStr = data.timestamp; // 'YYYY-MM-DD HH:MM:SS'
+        if (!tsStr) {
+          if (badge) {
+            badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1.5 ml-2";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> Raspi Status Unknown`;
+          }
+          
+          if (emptyTitle) emptyTitle.textContent = "Status Unknown";
+          if (emptyDesc) emptyDesc.textContent = "Unable to determine Raspberry Pi active status.";
+          if (window.lucide) window.lucide.createIcons();
+          return;
+        }
+
+        // Parse date parts manually to avoid cross-browser timezone parse bugs
+        const parts = tsStr.split(/[- :]/);
+        const tsDate = new Date(parts[0], parts[1]-1, parts[2], parts[3], parts[4], parts[5]);
+        const now = new Date();
+        const diffMinutes = (now - tsDate) / (1000 * 60);
+
+        if (diffMinutes <= 30) {
+          // Raspi is ON!
+          if (alertsCount === 0) {
+            // Healthy!
+            if (badge) {
+              badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 ml-2";
+              badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Raspi ON: Good condition`;
+            }
+            
+            if (emptyTitle) emptyTitle.textContent = "All Clear — Good condition";
+            if (emptyDesc) emptyDesc.textContent = "The Raspberry Pi is ON and monitoring actively. No anomalies have been detected in the last 2 hours.";
+            if (emptyIconContainer) {
+              emptyIconContainer.className = "inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 mb-4";
+              emptyIconContainer.innerHTML = `<i data-lucide="shield-check" class="w-8 h-8 text-emerald-600"></i>`;
+            }
+          } else {
+            // Anomaly present
+            if (badge) {
+              badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1.5 ml-2";
+              badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span> Raspi ON: Anomaly Detected`;
+            }
+          }
+        } else {
+          // Raspi is OFF/Offline (> 30 mins)
+          if (badge) {
+            badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1.5 ml-2";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Raspi Offline`;
+          }
+          
+          if (emptyTitle) emptyTitle.textContent = "Status Unknown (Raspi Offline)";
+          if (emptyDesc) emptyDesc.textContent = "No active alerts in log, but the Raspberry Pi has not sent any telemetry data in the last 30 minutes.";
+          if (emptyIconContainer) {
+            emptyIconContainer.className = "inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-50 mb-4";
+            emptyIconContainer.innerHTML = `<i data-lucide="wifi-off" class="w-8 h-8 text-amber-600"></i>`;
+          }
+        }
+      } catch (err) {
+        console.error("Error checking health status:", err);
+        if (badge) {
+          badge.className = "text-xs px-2.5 py-1 rounded-full font-bold bg-slate-100 text-slate-500 border border-slate-200 flex items-center gap-1.5 ml-2";
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> Raspi Offline`;
+        }
+      }
+      
+      if (window.lucide) window.lucide.createIcons();
+    }
+
+    // Initial Load
+    fetchAlerts();
+
+    // Check system status health every 30 seconds
+    setInterval(() => {
+      checkSystemHealth(currentAlerts.length);
+    }, 30000);
+  </script>
+  </div>
+</body>
+
+</html>

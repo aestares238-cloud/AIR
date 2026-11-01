@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="/assets/xd/logo.png?v=3">
+    <link rel="shortcut icon" type="image/png" href="/assets/xd/logo.png?v=3">
+    <title>AirBnBrrr - Admin Login</title>
+    
+    <!-- Google Fonts (Inter to match application) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Match the application's Green theme configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f3fafb',
+                            100: '#C1E6EC',
+                            500: '#62B6DC',
+                            600: '#1E6AA6', // Primary Deep Cold Blue
+                            700: '#185585',
+                            800: '#4b6b80', // Muted Text
+                            900: '#0b1d30', // Dark Text
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-brand-50 text-brand-900 min-h-screen font-sans flex items-center justify-center selection:bg-brand-600 selection:text-white px-4">
+
+    <!-- Card Container -->
+    <div class="bg-white rounded-3xl p-8 sm:p-12 border border-brand-100 shadow-xl shadow-brand-600/5 hover:shadow-brand-600/10 hover:-translate-y-0.5 transition-all duration-300 max-w-md w-full flex flex-col">
+        
+        <!-- Header -->
+        <header class="text-center mb-8 flex flex-col items-center">
+            <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mb-4 shadow-sm border border-brand-100/50">
+                <i data-lucide="shield-check" class="w-7 h-7"></i>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tight mb-2">AirBnBrrr</h1>
+            <p class="text-brand-800 text-sm font-medium">Enter details to access control panel.</p>
+        </header>
+
+        <!-- Error Alert Banner -->
+        <div class="bg-red-50 border border-red-100 text-red-800 rounded-2xl p-4 text-sm flex items-center gap-3 hidden mb-6" id="errorBanner">
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-red-600 flex-shrink-0"></i>
+            <span id="errorMessage" class="font-medium">Invalid username or password</span>
+        </div>
+
+        <!-- Form -->
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-6">
+            <!-- Username -->
+            <div>
+                <label for="username" class="block text-sm font-semibold text-brand-900 mb-2">Username</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-800">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </span>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        required 
+                        placeholder="e.g. admin" 
+                        autocomplete="username"
+                        class="w-full bg-brand-50/50 border border-brand-100 rounded-xl pl-11 pr-4 py-3 text-brand-900 placeholder:text-brand-800/40 outline-none focus:bg-white focus:border-brand-600 focus:ring-4 focus:ring-brand-600/10 transition-all duration-200"
+                    />
+                </div>
+            </div>
+
+            <!-- Password -->
+            <div>
+                <label for="password" class="block text-sm font-semibold text-brand-900 mb-2">Password</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-brand-800">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                    </span>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        required 
+                        placeholder="********" 
+                        autocomplete="current-password"
+                        class="w-full bg-brand-50/50 border border-brand-100 rounded-xl pl-11 pr-4 py-3 text-brand-900 placeholder:text-brand-800/40 outline-none focus:bg-white focus:border-brand-600 focus:ring-4 focus:ring-brand-600/10 transition-all duration-200"
+                    />
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button 
+                type="submit" 
+                id="submitBtn"
+                class="inline-flex items-center justify-center w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-brand-600/20 hover:shadow-brand-600/30 transition-all duration-200 active:scale-[0.98] cursor-pointer"
+            >
+                <span id="btnText" class="flex items-center gap-2">
+                    Sign In
+                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                </span>
+                <!-- Green Spinner -->
+                <div class="hidden w-5 h-5 border-2 border-white border-b-transparent rounded-full animate-spin" id="btnLoader"></div>
+            </button>
+        </form>
+    </div>
+
+    <!-- Scripting & Auth Handlers -->
+    <script>
+        // Render Lucide Icons
+        lucide.createIcons();
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+            const errorBanner = document.getElementById('errorBanner');
+            const errorMessage = document.getElementById('errorMessage');
+
+            // Reset UI states
+            errorBanner.classList.add('hidden');
+            btnText.classList.add('hidden');
+            btnLoader.classList.remove('hidden');
+            submitBtn.disabled = true;
+            submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Success! Redirect to the Control Panel root
+                    window.location.href = '/';
+                } else {
+                    // Error response
+                    errorMessage.textContent = data.detail || 'Invalid credentials';
+                    errorBanner.classList.remove('hidden');
+                    
+                    // Reset loader states
+                    btnText.classList.remove('hidden');
+                    btnLoader.classList.add('hidden');
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                }
+            } catch (err) {
+                errorMessage.textContent = 'Connection error. Please try again.';
+                errorBanner.classList.remove('hidden');
+                
+                // Reset loader states
+                btnText.classList.remove('hidden');
+                btnLoader.classList.add('hidden');
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+    </script>
+</body>
+</html>

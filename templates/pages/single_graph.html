@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/png" href="/assets/xd/logo.png?v=3">
+    <link rel="shortcut icon" type="image/png" href="/assets/xd/logo.png?v=3">
+    <title>Single Column Graph</title>
+    <style>
+        :root {
+            --bg: #f3fafb;
+            --accent: #1E6AA6;
+            --muted: #4b6b80
+        }
+
+        html,
+        body {
+            height: 100%
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 12px;
+            background: var(--bg);
+            color: #0b1d30;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .controls>label {
+            flex: 0 0 auto
+        }
+
+        select,
+        input[type=datetime-local] {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #C1E6EC;
+            background: #fff;
+            font-size: 14px;
+        }
+
+        .range-btn {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 0;
+            background: #C1E6EC;
+            color: #0b1d30;
+            cursor: pointer;
+            font-size: 14px;
+            min-height: 40px;
+        }
+
+        .range-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .small {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        #custom-range {
+            display: none;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        /* Chart container: control height via CSS so chart stays responsive */
+        .chart-container {
+            width: 100%;
+            height: 220px;
+            position: relative;
+        }
+
+        canvas#chart {
+            width: 100% !important;
+            height: 100% !important;
+            display: block
+        }
+
+        #no-data {
+            font-size: 14px
+        }
+
+        /* Small devices (phones) */
+        @media (max-width:599px) {
+            body {
+                margin: 8px
+            }
+
+            .card {
+                padding: 10px
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch
+            }
+
+            .controls>div {
+                width: 100%;
+                display: flex;
+                gap: 8px
+            }
+
+            #ranges {
+                overflow: auto;
+                padding-bottom: 6px
+            }
+
+            .range-btn {
+                flex: 0 0 auto
+            }
+
+            .chart-container {
+                height: 200px
+            }
+        }
+
+        /* Medium devices (tablets) */
+        @media (min-width:600px) and (max-width:899px) {
+            .card {
+                padding: 14px
+            }
+
+            .chart-container {
+                height: 300px
+            }
+
+            .controls {
+                gap: 10px
+            }
+        }
+
+        /* Large devices (desktop) */
+        @media (min-width:900px) {
+            .card {
+                padding: 18px
+            }
+
+            .chart-container {
+                height: 420px
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script
+        src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@^2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- Luxon -->
+    <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
+
+    <!-- Chart.js Luxon Adapter -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
+</head>
+
+<body>
+    <h1>Single Column Graph</h1>
+    <div class="card">
+        <div class="controls">
+            <label class="small">Unit:</label>
+            <select id="ac-selector" style="margin-right: 8px;">
+                <option value="telemetry">Telemetry</option>
+                <option value="AC1">AC1</option>
+                <option value="AC2">AC2</option>
+                <option value="AC3">AC3</option>
+                <option value="AC4">AC4</option>
+                <option value="AC5">AC5</option>
+                <option value="AC6">AC6</option>
+            </select>
+
+            <label class="small">Column:</label>
+            <select id="columnSelect"></select>
+
+            <div id="ranges" style="display:flex;gap:6px;align-items:center">
+                <!-- buttons inserted by JS -->
+            </div>
+
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+                <button id="refresh" class="range-btn">Refresh</button>
+            </div>
+        </div>
+
+        <div id="custom-range">
+            <label class="small">From</label>
+            <input type="datetime-local" id="customStart">
+            <label class="small">To</label>
+            <input type="datetime-local" id="customEnd">
+            <button id="applyCustom" class="range-btn">Apply</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+        <div id="no-data" style="display:none;margin-top:8px;color:#666">No numeric data found for the selected range.
+        </div>
+    </div>
+
+    <script>
+        const columns = [
+            'dht_temp', 'dht_humidity', 'vibration',
+            'ds18b20_temp1', 'ds18b20_temp2', 'pzem_voltage', 'pzem_current',
+            'pzem_power', 'pzem_energy', 'pzem_frequency', 'pzem_power_factor'
+        ];
+
+        const rangeOptions = [
+            ['today', 'Today'], ['yesterday', 'Yesterday'], ['last7', 'Last 7 days'], ['last28', 'Last 28 days'], ['thisMonth', 'This month'], ['lastMonth', 'Last month'], ['custom', 'Custom']
+        ];
+
+        const urlParams = new URLSearchParams(location.search);
+        const initialColumn = urlParams.get('columns') || 'pzem_current';
+        const defaultRange = 'thisMonth';
+        let activeAC = localStorage.getItem('data_gathered_active_ac') || 'telemetry';
+
+        const acSelector = document.getElementById('ac-selector');
+        if (acSelector) {
+            acSelector.value = activeAC;
+            acSelector.addEventListener('change', (e) => {
+                activeAC = e.target.value;
+                localStorage.setItem('data_gathered_active_ac', activeAC);
+                fetchAndRender();
+            });
+        }
+
+        const columnSelect = document.getElementById('columnSelect');
+        const rangesEl = document.getElementById('ranges');
+        const customRangeEl = document.getElementById('custom-range');
+        const customStart = document.getElementById('customStart');
+        const customEnd = document.getElementById('customEnd');
+
+        for (const c of columns) {
+            const opt = document.createElement('option'); opt.value = c; opt.textContent = c; columnSelect.appendChild(opt);
+        }
+        columnSelect.value = initialColumn;
+
+        // build range buttons
+        let activeRange = defaultRange;
+        for (const [val, label] of rangeOptions) {
+            const btn = document.createElement('button');
+            btn.className = 'range-btn'; btn.dataset.val = val; btn.textContent = label;
+            btn.addEventListener('click', () => { setRange(val); });
+            rangesEl.appendChild(btn);
+        }
+
+        function setRange(val) {
+            activeRange = val;
+            document.querySelectorAll('.range-btn').forEach(b => b.classList.toggle('active', b.dataset.val === val));
+            customRangeEl.style.display = (val === 'custom') ? 'flex' : 'none';
+            fetchAndRender();
+        }
+
+        // compute ISO strings for the requested named ranges
+        function computeRangeStartEnd(range) {
+            const now = new Date();
+            function isoNoTZ(d) { return d.toISOString().slice(0, 19); }
+            if (range === 'custom') return {
+                start: customStart.value ? isoNoTZ(new Date(customStart.value)) : null,
+                end: customEnd.value ? isoNoTZ(new Date(customEnd.value)) : null
+            };
+
+            let start = null;
+            let end = now;
+
+            if (range === 'today') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                end = now;
+            } else if (range === 'yesterday') {
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0);
+                end = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59);
+            } else if (range === 'last7') {
+                start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                end = now;
+            } else if (range === 'last28') {
+                start = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
+                end = now;
+            } else if (range === 'thisMonth') {
+                start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+                end = now;
+            } else if (range === 'lastMonth') {
+                const firstOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+                const lastOfLastMonth = new Date(firstOfThisMonth.getTime() - 1000);
+                start = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), 1, 0, 0, 0);
+                end = new Date(lastOfLastMonth.getFullYear(), lastOfLastMonth.getMonth(), lastOfLastMonth.getDate(), 23, 59, 59);
+            }
+
+            return { start: start ? isoNoTZ(start) : null, end: end ? isoNoTZ(end) : null };
+        }
+
+        // Chart setup
+        const ctx = document.getElementById('chart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '',
+                    data: [],
+                    borderColor: '#1E6AA6',
+                    backgroundColor: 'rgba(30,106,166,0.08)',
+                    tension: 0.01,
+                    pointRadius: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            tooltipFormat: 'yyyy-MM-dd HH:mm:ss',
+                            displayFormats: {
+                                minute: 'HH:mm',
+                                hour: 'HH:mm',
+                                day: 'MMM d'
+                            }
+                        },
+                        adapters: {
+                            date: {
+                                zone: 'Asia/Manila' // Converts UTC to Philippine Time
+                            }
+                        }
+                    },
+                    y: { beginAtZero: false }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        async function fetchAndRender() {
+            const column = columnSelect.value;
+            const { start, end } = computeRangeStartEnd(activeRange);
+            let url = '/telemetry/column?column=' + encodeURIComponent(column) + '&ac_unit=' + encodeURIComponent(activeAC);
+            if (start) url += '&start=' + encodeURIComponent(start);
+            if (end) url += '&end=' + encodeURIComponent(end);
+            console.log(start);
+            console.log(end);
+            try {
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Network');
+                const rows = await res.json();
+                // parse rows into points
+                const points = [];
+                for (const r of rows) {
+                    let ts = null;
+                    try {
+                        if (typeof r.timestamp === 'string') {
+                            let t1 = r.timestamp.trim();
+                            if (t1.includes(' ') && !t1.includes('T')) {
+                                t1 = t1.replace(' ', 'T');
+                            }
+                            if (/([+-]\d{2})$/.test(t1)) {
+                                t1 = t1 + ":00";
+                            } else if (!/([+-]\d{2}(:?\d{2})?|Z)$/i.test(t1)) {
+                                t1 = t1 + "+08:00";
+                            }
+                            ts = new Date(t1);
+                        }
+                    } catch (e) { ts = null; }
+                    const v = r[column];
+                    if (v === null || v === undefined) continue;
+                    const num = Number(v);
+                    if (!isFinite(num)) continue;
+                    if (!ts || isNaN(ts)) continue;
+                    points.push({ ts, v: num });
+                }
+
+                if (points.length === 0) {
+                    document.getElementById('no-data').style.display = 'block';
+                    chart.data.labels = [];
+                    chart.data.datasets[0].data = [];
+                    chart.update();
+                    return;
+                }
+
+                const isHourlyAgg = (activeRange === 'today' || activeRange === 'yesterday');
+
+                if (isHourlyAgg) {
+                    // compute start/end Date objects robustly
+                    let startDate = null, endDate = null;
+                    try {
+                        if (start) {
+                            const s1 = start.replace(' ', 'T');
+                            startDate = new Date(s1);
+                            if (isNaN(startDate)) startDate = new Date(s1 + 'Z');
+                        }
+                        if (end) {
+                            const e1 = end.replace(' ', 'T');
+                            endDate = new Date(e1);
+                            if (isNaN(endDate)) endDate = new Date(e1 + 'Z');
+                        }
+                    } catch (e) { startDate = startDate || null; endDate = endDate || null; }
+                    if (!startDate || isNaN(startDate)) startDate = new Date(points[0].ts);
+                    if (!endDate || isNaN(endDate)) endDate = new Date(points[points.length - 1].ts);
+
+                    // align start to hour 00:00 of that day (for yesterday) or keep start hour for today
+                    const hourStart = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), startDate.getHours(), 0, 0);
+                    const hourEnd = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate(), endDate.getHours(), 0, 0);
+
+                    // bucket by hour (ms since epoch)
+                    const buckets = new Map();
+                    for (const p of points) {
+                        const d = p.ts;
+                        const bk = new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), 0, 0).getTime();
+                        const cur = buckets.get(bk) || { sum: 0, count: 0 };
+                        cur.sum += p.v; cur.count += 1; buckets.set(bk, cur);
+                    }
+
+                    // build labels from hourStart to hourEnd inclusive
+                    const labels = [];
+                    const dataAgg = [];
+                    // for 'today' start at hourStart (which for today will be midnight unless computeRangeStartEnd changed), include up to hourEnd
+                    for (let t = hourStart.getTime(); t <= hourEnd.getTime(); t += 60 * 60 * 1000) {
+                        labels.push(new Date(t));
+                        const b = buckets.get(t);
+                        if (b && b.count > 0) dataAgg.push(Number((b.sum / b.count).toFixed(6))); else dataAgg.push(null);
+                    }
+
+                    document.getElementById('no-data').style.display = 'none';
+                    chart.data.labels = labels;
+                    chart.data.datasets[0].data = dataAgg;
+                    chart.data.datasets[0].label = column;
+
+                    // adjust x-axis to show hours only
+                    if (chart.options && chart.options.scales && chart.options.scales.x && chart.options.scales.x.time) {
+                        chart.options.scales.x.time.unit = 'hour';
+                        chart.options.scales.x.time.displayFormats = chart.options.scales.x.time.displayFormats || {};
+                        chart.options.scales.x.time.displayFormats.hour = 'ha';
+                    }
+
+                    chart.update();
+                    return;
+                }
+
+                // default: plot raw points
+                document.getElementById('no-data').style.display = 'none';
+                chart.data.labels = points.map(p => p.ts);
+                chart.data.datasets[0].data = points.map(p => p.v);
+                chart.data.datasets[0].label = column;
+                // remove any forced hourly unit
+                if (chart.options && chart.options.scales && chart.options.scales.x && chart.options.scales.x.time) {
+                    delete chart.options.scales.x.time.unit;
+                    chart.options.scales.x.time.displayFormats.hour = 'HH:mm';
+                }
+                chart.update();
+            } catch (err) {
+                document.getElementById('no-data').textContent = 'Unable to load data.'; document.getElementById('no-data').style.display = 'block';
+            }
+        }
+
+        document.getElementById('refresh').addEventListener('click', fetchAndRender);
+        document.getElementById('applyCustom').addEventListener('click', () => { setRange('custom'); });
+        columnSelect.addEventListener('change', () => { // reflect to URL
+            const p = new URLSearchParams(location.search);
+            p.set('columns', columnSelect.value);
+            history.replaceState(null, '', location.pathname + '?' + p.toString());
+            fetchAndRender();
+        });
+
+        // initialize active button and load
+        setRange(defaultRange);
+    </script>
+</body>
+
+</html>
